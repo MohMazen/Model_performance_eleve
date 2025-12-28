@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaire d'Évaluation Élève</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .section {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section-description {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .question-group {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+
+        .question-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .question {
+            margin-bottom: 20px;
+        }
+
+        .question label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .radio-item, .checkbox-item {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .radio-item:hover, .checkbox-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .radio-item input, .checkbox-item input {
+            margin-right: 8px;
+        }
+
+        .scale-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .scale-label {
+            font-size: 0.9em;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .scale-input {
+            flex: 1;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .scale-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .scale-value {
+            font-weight: bold;
+            color: #667eea;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .completion-section {
+            text-align: center;
+            padding: 60px 40px;
+        }
+
+        .completion-icon {
+            font-size: 4em;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .completion-title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .completion-text {
+            font-size: 1.2em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .section-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e9ecef;
+            transition: background 0.3s ease;
+        }
+
+        .section-dot.active {
+            background: #667eea;
+        }
+
+        .section-dot.completed {
+            background: #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .navigation {
+                padding: 20px;
+            }
+
+            .radio-group, .checkbox-group {
+                flex-direction: column;
+            }
+
+            .radio-item, .checkbox-item {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Questionnaire d'Évaluation</h1>
+            <p>Évaluation complète des paramètres individuels, familiaux et contextuels</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="section-nav" id="sectionNav"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Section 1 sur 8</div>
+        </div>
+
+        <div class="section active" data-section="1">
+            <h2 class="section-title">Capacités Organisationnelles</h2>
+            <p class="section-description">Cette section évalue votre organisation personnelle et votre gestion du temps.</p>
+
+            <div class="question-group">
+                <h3>Organisation du temps de travail</h3>
+                <div class="question">
+                    <label>Comment évaluez-vous votre niveau d'organisation pour le travail scolaire ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très désorganisé</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="organisation">
+                        <span class="scale-label">Très organisé</span>
+                        <div class="scale-value" id="organisationValue">5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Gestion du temps</h3>
+                <div class="question">
+                    <label>Comment évaluez-vous vos habitudes de gestion du temps ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="gestionTemps" value="faible" id="gestionFaible">
+                            <label for="gestionFaible">Faible</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="gestionTemps" value="moyen" id="gestionMoyen">
+                            <label for="gestionMoyen">Moyen</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="gestionTemps" value="fort" id="gestionFort">
+                            <label for="gestionFort">Fort</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="2">
+            <h2 class="section-title">Motivation et Engagement</h2>
+            <p class="section-description">Évaluons votre motivation et votre engagement dans vos études.</p>
+
+            <div class="question-group">
+                <h3>Motivation intrinsèque</h3>
+                <div class="question">
+                    <label>Quel est votre niveau d'intérêt pour le français ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationFrancais">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationFrancaisValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Quel est votre niveau d'intérêt pour les mathématiques ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationMaths">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationMathsValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Quel est votre niveau d'intérêt pour les sciences ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSciences">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationSciencesValue">5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Motivation extrinsèque</h3>
+                <div class="question">
+                    <label>Dans quelle mesure les encouragements de votre famille vous motivent-ils ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationFamille">
+                        <span class="scale-label">Énormément</span>
+                        <div class="scale-value" id="motivationFamilleValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Dans quelle mesure les récompenses (notes, félicitations) vous motivent-elles ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationRecompenses">
+                        <span class="scale-label">Énormément</span>
+                        <div class="scale-value" id="motivationRecompensesValue">5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Persévérance (Échelle Grit)</h3>
+                <div class="question">
+                    <label>Je termine tout ce que je commence</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout d'accord</span>
+                        <input type="range" class="scale-input" min="1" max="5" value="3" id="grit1">
+                        <span class="scale-label">Tout à fait d'accord</span>
+                        <div class="scale-value" id="grit1Value">3</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Je travaille dur même quand c'est difficile</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout d'accord</span>
+                        <input type="range" class="scale-input" min="1" max="5" value="3" id="grit2">
+                        <span class="scale-label">Tout à fait d'accord</span>
+                        <div class="scale-value" id="grit2Value">3</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Je persévère malgré les échecs</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout d'accord</span>
+                        <input type="range" class="scale-input" min="1" max="5" value="3" id="grit3">
+                        <span class="scale-label">Tout à fait d'accord</span>
+                        <div class="scale-value" id="grit3Value">3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="3">
+            <h2 class="section-title">Temps d'étude et écrans</h2>
+            <p class="section-description">Parlons de vos habitudes d'étude et d'utilisation des écrans.</p>
+
+            <div class="question-group">
+                <h3>Temps d'étude</h3>
+                <div class="question">
+                    <label>Combien d'heures passez-vous à faire vos leçons chaque soir ?</label>
+                    <input type="number" class="form-control" min="0" max="8" step="0.5" id="heuresEtude" placeholder="Nombre d'heures">
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Temps devant les écrans</h3>
+                <div class="question">
+                    <label>Durée moyenne de jeu vidéo par jour (en heures)</label>
+                    <input type="number" class="form-control" min="0" max="12" step="0.5" id="jeuxVideo" placeholder="Heures par jour">
+                </div>
+
+                <div class="question">
+                    <label>Temps passé sur les réseaux sociaux par jour (en heures)</label>
+                    <input type="number" class="form-control" min="0" max="12" step="0.5" id="reseauxSociaux" placeholder="Heures par jour">
+                </div>
+
+                <div class="question">
+                    <label>Temps passé à regarder des vidéos de divertissement par jour (en heures)</label>
+                    <input type="number" class="form-control" min="0" max="12" step="0.5" id="streaming" placeholder="Heures par jour">
+                </div>
+
+                <div class="question">
+                    <label>Temps passé à consulter des sites éducatifs par jour (en heures)</label>
+                    <input type="number" class="form-control" min="0" max="8" step="0.5" id="sitesEducatifs" placeholder="Heures par jour">
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="4">
+            <h2 class="section-title">Sommeil et bien-être</h2>
+            <p class="section-description">Évaluons la qualité de votre sommeil et votre bien-être général.</p>
+
+            <div class="question-group">
+                <h3>Qualité du sommeil</h3>
+                <div class="question">
+                    <label>Combien d'heures dormez-vous en moyenne par nuit ?</label>
+                    <input type="number" class="form-control" min="4" max="12" step="0.5" id="heuresSommeil" placeholder="Heures de sommeil">
+                </div>
+
+                <div class="question">
+                    <label>Comment évaluez-vous la qualité de votre sommeil ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très mauvaise</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="qualiteSommeil">
+                        <span class="scale-label">Excellente</span>
+                        <div class="scale-value" id="qualiteSommeilValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>À quelle heure vous couchez-vous habituellement ?</label>
+                    <input type="time" class="form-control" id="heureCoucher">
+                </div>
+
+                <div class="question">
+                    <label>À quelle heure vous levez-vous habituellement ?</label>
+                    <input type="time" class="form-control" id="heureLever">
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Gestion du stress</h3>
+                <div class="question">
+                    <label>Au cours du dernier mois, à quelle fréquence avez-vous été contrarié par quelque chose qui est arrivé de manière inattendue ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="stress1" value="0" id="stress1_0">
+                            <label for="stress1_0">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress1" value="1" id="stress1_1">
+                            <label for="stress1_1">Presque jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress1" value="2" id="stress1_2">
+                            <label for="stress1_2">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress1" value="3" id="stress1_3">
+                            <label for="stress1_3">Assez souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress1" value="4" id="stress1_4">
+                            <label for="stress1_4">Très souvent</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Au cours du dernier mois, à quelle fréquence avez-vous senti que vous étiez incapable de contrôler les choses importantes de votre vie ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="stress2" value="0" id="stress2_0">
+                            <label for="stress2_0">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress2" value="1" id="stress2_1">
+                            <label for="stress2_1">Presque jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress2" value="2" id="stress2_2">
+                            <label for="stress2_2">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress2" value="3" id="stress2_3">
+                            <label for="stress2_3">Assez souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="stress2" value="4" id="stress2_4">
+                            <label for="stress2_4">Très souvent</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="5">
+            <h2 class="section-title">Nutrition et activité physique</h2>
+            <p class="section-description">Parlons de vos habitudes alimentaires et de votre activité physique.</p>
+
+            <div class="question-group">
+                <h3>Habitudes alimentaires</h3>
+                <div class="question">
+                    <label>Combien de repas prenez-vous par jour ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="nbRepas" value="1" id="repas1">
+                            <label for="repas1">1 repas</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="nbRepas" value="2" id="repas2">
+                            <label for="repas2">2 repas</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="nbRepas" value="3" id="repas3">
+                            <label for="repas3">3 repas</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="nbRepas" value="4" id="repas4">
+                            <label for="repas4">4 repas ou plus</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>À quelle fréquence prenez-vous des repas équilibrés ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="repasEquilibres" value="jamais" id="equilibre1">
+                            <label for="equilibre1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="repasEquilibres" value="rarement" id="equilibre2">
+                            <label for="equilibre2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="repasEquilibres" value="parfois" id="equilibre3">
+                            <label for="equilibre3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="repasEquilibres" value="souvent" id="equilibre4">
+                            <label for="equilibre4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="repasEquilibres" value="toujours" id="equilibre5">
+                            <label for="equilibre5">Toujours</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Activité physique</h3>
+                <div class="question">
+                    <label>Pratiquez-vous une activité sportive extra-scolaire ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="activiteSportive" value="oui" id="sport_oui">
+                            <label for="sport_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="activiteSportive" value="non" id="sport_non">
+                            <label for="sport_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Combien d'heures d'activité physique pratiquez-vous par semaine ?</label>
+                    <input type="number" class="form-control" min="0" max="20" id="heuresActivite" placeholder="Heures par semaine">
+                </div>
+
+                <div class="question">
+                    <label>Quel est votre niveau sportif ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="niveauSportif" value="debutant" id="niveau1">
+                            <label for="niveau1">Débutant</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="niveauSportif" value="confirme" id="niveau2">
+                            <label for="niveau2">Confirmé</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="niveauSportif" value="haut_niveau" id="niveau3">
+                            <label for="niveau3">Haut niveau</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="6">
+            <h2 class="section-title">Relations et soutien</h2>
+            <p class="section-description">Évaluons vos relations avec vos pairs et le soutien dont vous bénéficiez.</p>
+
+            <div class="question-group">
+                <h3>Méthodes de travail</h3>
+                <div class="question">
+                    <label>Préférez-vous travailler seul ou en groupe ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="travailPref" value="seul" id="travail_seul">
+                            <label for="travail_seul">Seul</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="travailPref" value="groupe" id="travail_groupe">
+                            <label for="travail_groupe">En groupe</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="travailPref" value="mixte" id="travail_mixte">
+                            <label for="travail_mixte">Les deux selon le contexte</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Participez-vous à des groupes de soutien mutuel avec d'autres élèves ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="soutienMutuel" value="jamais" id="soutien1">
+                            <label for="soutien1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="soutienMutuel" value="rarement" id="soutien2">
+                            <label for="soutien2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="soutienMutuel" value="parfois" id="soutien3">
+                            <label for="soutien3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="soutienMutuel" value="souvent" id="soutien4">
+                            <label for="soutien4">Souvent</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Soutien et mentorat</h3>
+                <div class="question">
+                    <label>Bénéficiez-vous de l'aide d'un tuteur ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="tuteur" value="oui" id="tuteur_oui">
+                            <label for="tuteur_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="tuteur" value="non" id="tuteur_non">
+                            <label for="tuteur_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="qualiteTuteur" style="display: none;">
+                    <label>Comment évaluez-vous la qualité de vos interactions avec votre tuteur ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très mauvaise</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="qualiteTuteurScore">
+                        <span class="scale-label">Excellente</span>
+                        <div class="scale-value" id="qualiteTuteurValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Bénéficiez-vous de l'aide d'un mentor ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="mentor" value="oui" id="mentor_oui">
+                            <label for="mentor_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="mentor" value="non" id="mentor_non">
+                            <label for="mentor_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="qualiteMentor" style="display: none;">
+                    <label>Comment évaluez-vous la qualité de vos interactions avec votre mentor ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très mauvaise</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="qualiteMentorScore">
+                        <span class="scale-label">Excellente</span>
+                        <div class="scale-value" id="qualiteMentorValue">5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="7">
+            <h2 class="section-title">Confiance en soi et bien-être émotionnel</h2>
+            <p class="section-description">Évaluons votre confiance en vous et votre gestion des émotions.</p>
+
+            <div class="question-group">
+                <h3>Confiance en soi et auto-efficacité</h3>
+                <div class="question">
+                    <label>Comment évaluez-vous votre confiance en vous globalement ? (Échelle Rosenberg)</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très faible</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="confianceSoi">
+                        <span class="scale-label">Très élevée</span>
+                        <div class="scale-value" id="confianceSoiValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Comment évaluez-vous votre estime de vous ? (Échelle de Bandura)</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très faible</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="estimeSoi">
+                        <span class="scale-label">Très élevée</span>
+                        <div class="scale-value" id="estimeSoiValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Lorsque vous rencontrez une difficulté, avez-vous tendance à l'éviter ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="evitement" value="jamais" id="evitement1">
+                            <label for="evitement1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="evitement" value="rarement" id="evitement2">
+                            <label for="evitement2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="evitement" value="parfois" id="evitement3">
+                            <label for="evitement3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="evitement" value="souvent" id="evitement4">
+                            <label for="evitement4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="evitement" value="toujours" id="evitement5">
+                            <label for="evitement5">Toujours</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Lorsque vous rencontrez une difficulté, avez-vous tendance à abandonner ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="abandon" value="jamais" id="abandon1">
+                            <label for="abandon1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="abandon" value="rarement" id="abandon2">
+                            <label for="abandon2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="abandon" value="parfois" id="abandon3">
+                            <label for="abandon3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="abandon" value="souvent" id="abandon4">
+                            <label for="abandon4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="abandon" value="toujours" id="abandon5">
+                            <label for="abandon5">Toujours</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Gestion des émotions</h3>
+                <div class="question">
+                    <label>Au cours du dernier mois, avez-vous ressenti des périodes de : (Sélectionnez toutes les options applicables)</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="etatPsychologique" value="amoureux" id="etatPsy1">
+                            <label for="etatPsy1">Amour</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="etatPsychologique" value="anxiete" id="etatPsy2">
+                            <label for="etatPsy2">Anxiété</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="etatPsychologique" value="deprime" id="etatPsy3">
+                            <label for="etatPsy3">Déprime</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="etatPsychologique" value="depression" id="etatPsy4">
+                            <label for="etatPsy4">Dépression</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="etatPsychologique" value="autre" id="etatPsy5">
+                            <label for="etatPsy5">Autre (précisez)</label>
+                        </div>
+                    </div>
+                    <textarea class="form-control" id="autreEtatPsy" placeholder="Précisez si vous avez sélectionné 'Autre'" style="display: none; margin-top: 10px;"></textarea>
+                </div>
+
+                <div class="question">
+                    <label>Avez-vous accès à un suivi psychologique ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="suiviPsy" value="oui" id="suiviPsy_oui">
+                            <label for="suiviPsy_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="suiviPsy" value="non" id="suiviPsy_non">
+                            <label for="suiviPsy_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Stress lié aux évaluations et à l'orientation</h3>
+                <div class="question">
+                    <label>Comment évaluez-vous votre niveau de stress lors des examens ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Pas du tout stressé</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="stressExamens">
+                        <span class="scale-label">Extrêmement stressé</span>
+                        <div class="scale-value" id="stressExamensValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Quel est le niveau de pression que vous ressentez de la part de votre famille concernant vos études et votre orientation ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucune pression</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="pressionFamiliale">
+                        <span class="scale-label">Très forte pression</span>
+                        <div class="scale-value" id="pressionFamilialeValue">5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" data-section="8">
+            <h2 class="section-title">Environnement de travail et soutien scolaire</h2>
+            <p class="section-description">Décrivez votre environnement d'étude à la maison et le soutien scolaire dont vous bénéficiez.</p>
+
+            <div class="question-group">
+                <h3>Qualité de l'environnement de travail à la maison</h3>
+                <div class="question">
+                    <label>Disposez-vous d'un bureau personnel pour étudier ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="bureauPersonnel" value="oui" id="bureau_oui">
+                            <label for="bureau_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="bureauPersonnel" value="non" id="bureau_non">
+                            <label for="bureau_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Comment évaluez-vous le niveau de calme dans votre maison pendant vos heures d'étude ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Très bruyant</span>
+                        <input type="range" class="scale-input" min="1" max="10" value="5" id="calmeMaison">
+                        <span class="scale-label">Très calme</span>
+                        <div class="scale-value" id="calmeMaisonValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>La lumière de votre espace de travail est-elle adaptée à l'étude ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="lumiereAdaptee" value="oui" id="lumiere_oui">
+                            <label for="lumiere_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="lumiereAdaptee" value="non" id="lumiere_non">
+                            <label for="lumiere_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Y a-t-il souvent des perturbations (bruit, autres enfants, etc.) dans votre environnement de travail ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="perturbations" value="jamais" id="perturbations1">
+                            <label for="perturbations1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="perturbations" value="rarement" id="perturbations2">
+                            <label for="perturbations2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="perturbations" value="parfois" id="perturbations3">
+                            <label for="perturbations3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="perturbations" value="souvent" id="perturbations4">
+                            <label for="perturbations4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="perturbations" value="toujours" id="perturbations5">
+                            <label for="perturbations5">Toujours</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Temps libre et responsabilités</h3>
+                <div class="question">
+                    <label>Combien d'heures de temps libre (loisirs) avez-vous en moyenne après l'école par jour ?</label>
+                    <input type="number" class="form-control" min="0" max="10" step="0.5" id="tempsLibre" placeholder="Heures par jour">
+                </div>
+
+                <div class="question">
+                    <label>À quelle fréquence participez-vous aux tâches ménagères (vaisselle, ménage, rangement) ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="tachesMenageres" value="jamais" id="menage1">
+                            <label for="menage1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="tachesMenageres" value="rarement" id="menage2">
+                            <label for="menage2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="tachesMenageres" value="parfois" id="menage3">
+                            <label for="menage3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="tachesMenageres" value="souvent" id="menage4">
+                            <label for="menage4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="tachesMenageres" value="toujours" id="menage5">
+                            <label for="menage5">Toujours</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <label>Si vous avez des frères et sœurs plus jeunes, combien d'heures par semaine les gardez-vous en moyenne ?</label>
+                    <input type="number" class="form-control" min="0" max="40" step="1" id="gardeFreresSoeurs" placeholder="Heures par semaine">
+                </div>
+            </div>
+
+            <div class="question-group">
+                <h3>Soutien scolaire et ressources éducatives</h3>
+                <div class="question">
+                    <label>Pour quelles matières recevez-vous du soutien scolaire externe (en dehors de l'école) ? (Sélectionnez toutes les options applicables)</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="francais" id="soutienMatiere1">
+                            <label for="soutienMatiere1">Français</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="maths" id="soutienMatiere2">
+                            <label for="soutienMatiere2">Mathématiques</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="sciences" id="soutienMatiere3">
+                            <label for="soutienMatiere3">Sciences</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="anglais" id="soutienMatiere4">
+                            <label for="soutienMatiere4">Anglais</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="histoire_geo" id="soutienMatiere5">
+                            <label for="soutienMatiere5">Histoire-Géographie</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="soutienMatiere" value="aucune" id="soutienMatiere6">
+                            <label for="soutienMatiere6">Aucune</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="heuresSoutienContainer" style="display: none;">
+                    <label>Pour chaque matière sélectionnée, indiquez le nombre d'heures de soutien scolaire par semaine :</label>
+                    <div id="soutienHoursInputs"></div>
+                </div>
+
+                <div class="question">
+                    <label>Êtes-vous abonné(e) à une plateforme d'étude en ligne (ex: Khan Academy, Kartable, etc.) ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="abonnementPlateforme" value="oui" id="plateforme_oui">
+                            <label for="plateforme_oui">Oui</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="abonnementPlateforme" value="non" id="plateforme_non">
+                            <label for="plateforme_non">Non</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="nomPlateforme" style="display: none;">
+                    <label>Si oui, quel est le nom de cette plateforme ?</label>
+                    <input type="text" class="form-control" id="nomPlateformeInput" placeholder="Nom de la plateforme">
+                </div>
+
+                <div class="question">
+                    <label>À quelle fréquence fréquentez-vous la médiathèque municipale ou une bibliothèque ?</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="frequenceMediathèque" value="jamais" id="mediatheque1">
+                            <label for="mediatheque1">Jamais</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="frequenceMediathèque" value="rarement" id="mediatheque2">
+                            <label for="mediatheque2">Rarement</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="frequenceMediathèque" value="parfois" id="mediatheque3">
+                            <label for="mediatheque3">Parfois</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="frequenceMediathèque" value="souvent" id="mediatheque4">
+                            <label for="mediatheque4">Souvent</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="frequenceMediathèque" value="plusieurs_fois_semaine" id="mediatheque5">
+                            <label for="mediatheque5">Plusieurs fois par semaine</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section completion-section" data-section="9">
+            <div class="completion-icon">✅</div>
+            <h2 class="completion-title">Merci d'avoir rempli le questionnaire !</h2>
+            <p class="completion-text">Vos réponses sont précieuses et nous aideront à mieux comprendre vos besoins.</p>
+        </div>
+
+        <div class="navigation">
+            <button class="btn btn-secondary" id="prevBtn" disabled>Précédent</button>
+            <button class="btn btn-primary" id="nextBtn">Suivant</button>
+            <button class="btn btn-primary" id="submitBtn" style="display: none;">Envoyer</button>
+        </div>
+    </div>
+
+    <script>
+        const sections = document.querySelectorAll('.section');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const sectionNav = document.getElementById('sectionNav');
+        let currentSectionIndex = 0;
+
+        function updateProgress() {
+            const totalSections = sections.length - 1; // Exclude the completion section
+            const progress = (currentSectionIndex / totalSections) * 100;
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `Section ${currentSectionIndex + 1} sur ${totalSections}`;
+
+            prevBtn.disabled = currentSectionIndex === 0;
+            nextBtn.style.display = currentSectionIndex === totalSections - 1 ? 'none' : 'inline-block';
+            submitBtn.style.display = currentSectionIndex === totalSections - 1 ? 'inline-block' : 'none';
+
+            sections.forEach((section, index) => {
+                section.classList.toggle('active', index === currentSectionIndex);
+            });
+
+            updateSectionDots();
+        }
+
+        function updateSectionDots() {
+            sectionNav.innerHTML = '';
+            const totalSections = sections.length - 1;
+            for (let i = 0; i < totalSections; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('section-dot');
+                if (i < currentSectionIndex) {
+                    dot.classList.add('completed');
+                } else if (i === currentSectionIndex) {
+                    dot.classList.add('active');
+                }
+                sectionNav.appendChild(dot);
+            }
+        }
+
+        function showNextSection() {
+            if (currentSectionIndex < sections.length - 1) {
+                currentSectionIndex++;
+                updateProgress();
+            }
+        }
+
+        function showPrevSection() {
+            if (currentSectionIndex > 0) {
+                currentSectionIndex--;
+                updateProgress();
+            }
+        }
+
+        nextBtn.addEventListener('click', showNextSection);
+        prevBtn.addEventListener('click', showPrevSection);
+
+        submitBtn.addEventListener('click', () => {
+            // Here you would collect all the form data and send it
+            // For now, let's just show the completion section
+            currentSectionIndex = sections.length - 1;
+            updateProgress();
+            document.querySelector('.navigation').style.display = 'none'; // Hide navigation buttons on completion
+        });
+
+
+        // Handle scale inputs and display their values
+        document.querySelectorAll('.scale-input').forEach(input => {
+            const valueSpan = document.getElementById(input.id + 'Value');
+            input.addEventListener('input', () => {
+                valueSpan.textContent = input.value;
+            });
+        });
+
+        // Toggle visibility of tutor quality question
+        document.querySelectorAll('input[name="tuteur"]').forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                const qualiteTuteurDiv = document.getElementById('qualiteTuteur');
+                if (event.target.value === 'oui') {
+                    qualiteTuteurDiv.style.display = 'block';
+                } else {
+                    qualiteTuteurDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Toggle visibility of mentor quality question
+        document.querySelectorAll('input[name="mentor"]').forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                const qualiteMentorDiv = document.getElementById('qualiteMentor');
+                if (event.target.value === 'oui') {
+                    qualiteMentorDiv.style.display = 'block';
+                } else {
+                    qualiteMentorDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Toggle visibility of "Autre" for emotional state
+        document.getElementById('etatPsy5').addEventListener('change', (event) => {
+            const autreEtatPsyTextarea = document.getElementById('autreEtatPsy');
+            if (event.target.checked) {
+                autreEtatPsyTextarea.style.display = 'block';
+            } else {
+                autreEtatPsyTextarea.style.display = 'none';
+            }
+        });
+
+        // Toggle visibility of hours for selected support subjects
+        const soutienMatiereCheckboxes = document.querySelectorAll('input[name="soutienMatiere"]');
+        const heuresSoutienContainer = document.getElementById('heuresSoutienContainer');
+        const soutienHoursInputs = document.getElementById('soutienHoursInputs');
+
+        soutienMatiereCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSoutienHoursInputs);
+        });
+
+        function updateSoutienHoursInputs() {
+            let hasSelection = false;
+            soutienHoursInputs.innerHTML = ''; // Clear previous inputs
+
+            soutienMatiereCheckboxes.forEach(checkbox => {
+                if (checkbox.checked && checkbox.value !== 'aucune') {
+                    hasSelection = true;
+                    const div = document.createElement('div');
+                    div.classList.add('question');
+                    div.innerHTML = `
+                        <label for="heures_${checkbox.value}">Heures de soutien pour ${checkbox.nextElementSibling.textContent} (par semaine) :</label>
+                        <input type="number" class="form-control" min="0" max="10" step="0.5" id="heures_${checkbox.value}" placeholder="Heures">
+                    `;
+                    soutienHoursInputs.appendChild(div);
+                }
+            });
+
+            heuresSoutienContainer.style.display = hasSelection ? 'block' : 'none';
+        }
+
+        // Toggle visibility of "Nom de la plateforme" for online study platform
+        document.querySelectorAll('input[name="abonnementPlateforme"]').forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                const nomPlateformeDiv = document.getElementById('nomPlateforme');
+                if (event.target.value === 'oui') {
+                    nomPlateformeDiv.style.display = 'block';
+                } else {
+                    nomPlateformeDiv.style.display = 'none';
+                }
+            });
+        });
+
+
+        // Initial setup
+        updateProgress();
+    </script>
+</body>
+</html>
