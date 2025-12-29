@@ -1,0 +1,50 @@
+{
+  "name": "education-analysis-app",
+  "version": "1.0.0",
+  "description": "Education Analysis Desktop Application",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .\"",
+    "build": "tsc && tsc -p electron/tsconfig.json && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "concurrently": "^9.2.1",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-squirrel-startup": "^1.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.education.analysis",
+    "productName": "Education Analysis",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "Claude4_model/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "Claude4_model",
+        "to": "Claude4_model"
+      }
+    ]
+  }
+}

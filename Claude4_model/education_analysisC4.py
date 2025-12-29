@@ -788,10 +788,17 @@ class AnalyseurPerformanceScolaire:
             traceback.print_exc()
 
 
+import argparse
+import sys
+
 def main():
     """
     Fonction principale pour exécuter l'analyse
     """
+    parser = argparse.ArgumentParser(description="Analyse Prédictive des Performances Scolaires")
+    parser.add_argument('--file', type=str, help='Chemin vers le fichier Excel de données')
+    args = parser.parse_args()
+
     print("🏫 SYSTÈME D'ANALYSE PRÉDICTIVE DES PERFORMANCES SCOLAIRES")
     print("=" * 70)
     print("Version 1.0 - Spécialisé pour l'éducation")
@@ -800,15 +807,24 @@ def main():
     # Créer l'analyseur
     analyseur = AnalyseurPerformanceScolaire()
     
-    # Option 1: Charger des données existantes
-    analyseur.charger_donnees('joins.xlsx')
-    
-    # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
-    print("🔄 Démarrage de l'analyse avec des données synthétiques...")
-    print()
-    
-    # Lancer l'analyse complète
-    analyseur.analyse_complete(generer_donnees=True)
+    if args.file:
+        print(f"Chargement du fichier: {args.file}")
+        if analyseur.charger_donnees(args.file):
+             print("Démarrage de l'analyse...")
+             analyseur.analyse_complete(generer_donnees=False)
+        else:
+             print("Erreur: Impossible de charger le fichier spécifié.")
+             sys.exit(1)
+    else:
+        # Option 1: Charger des données existantes (défaut)
+        # analyseur.charger_donnees('joins.xlsx')
+
+        # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
+        print("🔄 Démarrage de l'analyse avec des données synthétiques...")
+        print()
+
+        # Lancer l'analyse complète
+        analyseur.analyse_complete(generer_donnees=True)
     
     print()
     print("📚 GUIDE D'UTILISATION:")
