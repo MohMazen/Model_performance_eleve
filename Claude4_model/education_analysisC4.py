@@ -24,6 +24,10 @@ from sklearn.ensemble import RandomForestRegressor
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
+import argparse
+import os
+import sys
+
 warnings.filterwarnings('ignore')
 
 # Configuration des graphiques
@@ -35,12 +39,13 @@ class AnalyseurPerformanceScolaire:
     Classe principale pour l'analyse prédictive des performances scolaires
     """
     
-    def __init__(self, fichier_donnees=None):
+    def __init__(self, fichier_donnees=None, output_dir=None):
         """
         Initialise l'analyseur
         
         Args:
             fichier_donnees (str): Chemin vers le fichier Excel des données
+            output_dir (str): Chemin vers le dossier de sortie
         """
         self.donnees = None
         self.donnees_nettoyees = None
@@ -51,6 +56,10 @@ class AnalyseurPerformanceScolaire:
         self.modeles = {}
         self.meilleur_modele = None
         self.preprocesseur = None
+        self.output_dir = output_dir or os.getcwd()
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
         
         if fichier_donnees:
             self.charger_donnees(fichier_donnees)
@@ -344,9 +353,12 @@ class AnalyseurPerformanceScolaire:
         plt.xticks(rotation=0)
         
         plt.tight_layout()
-        plt.show()
         
-        print("   ✓ Visualisations générées")
+        output_file = os.path.join(self.output_dir, 'visualisation_globale.png')
+        plt.savefig(output_file)
+        plt.close(fig)
+
+        print(f"   ✓ Visualisations générées et sauvegardées dans: {output_file}")
     
     def preparer_modelisation(self):
         """
@@ -511,7 +523,7 @@ class AnalyseurPerformanceScolaire:
             print(f"{i:2d}. {row['Variable']:<30} {row['Importance']:.4f}")
         
         # Visualisation
-        plt.figure(figsize=(12, 8))
+        fig = plt.figure(figsize=(12, 8))
         top_features = importance_df.head(15)
         
         bars = plt.barh(range(len(top_features)), top_features['Importance'], color='steelblue', alpha=0.8)
@@ -528,7 +540,10 @@ class AnalyseurPerformanceScolaire:
                     f'{width:.3f}', ha='left', va='center', fontsize=9)
         
         plt.tight_layout()
-        plt.show()
+
+        output_file = os.path.join(self.output_dir, 'importance_variables.png')
+        plt.savefig(output_file)
+        plt.close(fig)
         
         return importance_df
     
@@ -698,10 +713,11 @@ class AnalyseurPerformanceScolaire:
         # Enregistrer le rapport
         contenu_rapport = "\n".join(rapport)
         
+        output_file = os.path.join(self.output_dir, 'rapport_analyse_scolaire.md')
         try:
-            with open('rapport_analyse_scolaire.md', 'w', encoding='utf-8') as f:
+            with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(contenu_rapport)
-            print("   ✓ Rapport sauvegardé: rapport_analyse_scolaire.md")
+            print(f"   ✓ Rapport sauvegardé: {output_file}")
         except Exception as e:
             print(f"   ⚠ Erreur lors de la sauvegarde: {e}")
         
@@ -724,12 +740,14 @@ class AnalyseurPerformanceScolaire:
         """
         print(f"\n💾 EXPORT DES DONNÉES DE TEST")
         
+        output_file = os.path.join(self.output_dir, nom_fichier)
+
         # Générer un petit échantillon de 30 élèves
         donnees_test = self.generer_donnees_synthetiques(30)
         
         try:
-            donnees_test.to_excel(nom_fichier, index=False)
-            print(f"   ✓ Fichier exporté: {nom_fichier}")
+            donnees_test.to_excel(output_file, index=False)
+            print(f"   ✓ Fichier exporté: {output_file}")
             print(f"   • {len(donnees_test)} élèves")
             print(f"   • {len(donnees_test.columns)} variables")
             
@@ -773,14 +791,15 @@ class AnalyseurPerformanceScolaire:
             
             # 6. Rapport et export
             self.generer_rapport()
-            self.exporter_donnees_test()
+            # self.exporter_donnees_test() # Disable test data export to clean up output
             
             print(f"\n🎉 ANALYSE TERMINÉE AVEC SUCCÈS!")
             print("=" * 50)
             print("📁 Fichiers générés:")
-            print("   • rapport_analyse_scolaire.md")
-            print("   • test_synthetique.xlsx")
-            print("   • Graphiques affichés")
+            print(f"   • {os.path.join(self.output_dir, 'rapport_analyse_scolaire.md')}")
+            # print("   • test_synthetique.xlsx")
+            print(f"   • {os.path.join(self.output_dir, 'visualisation_globale.png')}")
+            print(f"   • {os.path.join(self.output_dir, 'importance_variables.png')}")
             
         except Exception as e:
             print(f"\n❌ ERREUR LORS DE L'ANALYSE: {e}")
@@ -792,32 +811,31 @@ def main():
     """
     Fonction principale pour exécuter l'analyse
     """
+    parser = argparse.ArgumentParser(description="Système d'Analyse Prédictive des Performances Scolaires")
+    parser.add_argument('--file', type=str, help="Chemin vers le fichier Excel de données")
+    parser.add_argument('--output-dir', type=str, default=".", help="Dossier de sortie pour les rapports et images")
+
+    args = parser.parse_args()
+
     print("🏫 SYSTÈME D'ANALYSE PRÉDICTIVE DES PERFORMANCES SCOLAIRES")
     print("=" * 70)
     print("Version 1.0 - Spécialisé pour l'éducation")
     print()
     
     # Créer l'analyseur
-    analyseur = AnalyseurPerformanceScolaire()
+    analyseur = AnalyseurPerformanceScolaire(output_dir=args.output_dir)
     
-    # Option 1: Charger des données existantes
-    analyseur.charger_donnees('joins.xlsx')
+    if args.file:
+        print(f"Chargement des données depuis: {args.file}")
+        analyseur.charger_donnees(args.file)
+        analyseur.analyse_complete(generer_donnees=False)
+    else:
+        # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
+        print("🔄 Aucun fichier spécifié. Démarrage de l'analyse avec des données synthétiques...")
+        print()
+        analyseur.analyse_complete(generer_donnees=True)
     
-    # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
-    print("🔄 Démarrage de l'analyse avec des données synthétiques...")
     print()
-    
-    # Lancer l'analyse complète
-    analyseur.analyse_complete(generer_donnees=True)
-    
-    print()
-    print("📚 GUIDE D'UTILISATION:")
-    print("1. Remplacez les données synthétiques par vos vraies données")
-    print("2. Adaptez les variables selon votre contexte")
-    print("3. Ajustez les seuils dans les recommandations")
-    print("4. Personnalisez les visualisations selon vos besoins")
-    print()
-    print("💡 Pour plus d'aide, consultez la documentation dans le README.md")
 
 
 if __name__ == "__main__":
