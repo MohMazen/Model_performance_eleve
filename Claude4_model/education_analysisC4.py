@@ -24,6 +24,8 @@ from sklearn.ensemble import RandomForestRegressor
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
+import os
+import argparse
 warnings.filterwarnings('ignore')
 
 # Configuration des graphiques
@@ -35,14 +37,16 @@ class AnalyseurPerformanceScolaire:
     Classe principale pour l'analyse prédictive des performances scolaires
     """
     
-    def __init__(self, fichier_donnees=None):
+    def __init__(self, fichier_donnees=None, output_dir=None):
         """
         Initialise l'analyseur
         
         Args:
             fichier_donnees (str): Chemin vers le fichier Excel des données
+            output_dir (str): Dossier de sortie pour les fichiers générés
         """
         self.donnees = None
+        self.output_dir = output_dir or os.getcwd()
         self.donnees_nettoyees = None
         self.X_train = None
         self.X_test = None
@@ -344,9 +348,11 @@ class AnalyseurPerformanceScolaire:
         plt.xticks(rotation=0)
         
         plt.tight_layout()
-        plt.show()
+        output_path = os.path.join(self.output_dir, 'visualisation_donnees.png')
+        plt.savefig(output_path)
+        plt.close()
         
-        print("   ✓ Visualisations générées")
+        print(f"   ✓ Visualisations générées et sauvegardées dans {output_path}")
     
     def preparer_modelisation(self):
         """
@@ -528,7 +534,9 @@ class AnalyseurPerformanceScolaire:
                     f'{width:.3f}', ha='left', va='center', fontsize=9)
         
         plt.tight_layout()
-        plt.show()
+        output_path = os.path.join(self.output_dir, 'importance_variables.png')
+        plt.savefig(output_path)
+        plt.close()
         
         return importance_df
     
@@ -699,9 +707,10 @@ class AnalyseurPerformanceScolaire:
         contenu_rapport = "\n".join(rapport)
         
         try:
-            with open('rapport_analyse_scolaire.md', 'w', encoding='utf-8') as f:
+            output_path = os.path.join(self.output_dir, 'rapport_analyse_scolaire.md')
+            with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(contenu_rapport)
-            print("   ✓ Rapport sauvegardé: rapport_analyse_scolaire.md")
+            print(f"   ✓ Rapport sauvegardé: {output_path}")
         except Exception as e:
             print(f"   ⚠ Erreur lors de la sauvegarde: {e}")
         
@@ -728,8 +737,9 @@ class AnalyseurPerformanceScolaire:
         donnees_test = self.generer_donnees_synthetiques(30)
         
         try:
-            donnees_test.to_excel(nom_fichier, index=False)
-            print(f"   ✓ Fichier exporté: {nom_fichier}")
+            output_path = os.path.join(self.output_dir, nom_fichier)
+            donnees_test.to_excel(output_path, index=False)
+            print(f"   ✓ Fichier exporté: {output_path}")
             print(f"   • {len(donnees_test)} élèves")
             print(f"   • {len(donnees_test.columns)} variables")
             
@@ -792,16 +802,24 @@ def main():
     """
     Fonction principale pour exécuter l'analyse
     """
+    parser = argparse.ArgumentParser(description='Analyse prédictive des performances scolaires')
+    parser.add_argument('--file', type=str, help='Chemin vers le fichier Excel de données')
+    parser.add_argument('--output-dir', type=str, help='Dossier de sortie pour les résultats')
+    args = parser.parse_args()
+
     print("🏫 SYSTÈME D'ANALYSE PRÉDICTIVE DES PERFORMANCES SCOLAIRES")
     print("=" * 70)
     print("Version 1.0 - Spécialisé pour l'éducation")
     print()
     
     # Créer l'analyseur
-    analyseur = AnalyseurPerformanceScolaire()
+    analyseur = AnalyseurPerformanceScolaire(output_dir=args.output_dir)
     
     # Option 1: Charger des données existantes
-    analyseur.charger_donnees('joins.xlsx')
+    if args.file:
+        analyseur.charger_donnees(args.file)
+    else:
+        analyseur.charger_donnees('joins.xlsx')
     
     # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
     print("🔄 Démarrage de l'analyse avec des données synthétiques...")
