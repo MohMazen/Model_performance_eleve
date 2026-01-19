@@ -24,6 +24,10 @@ from sklearn.ensemble import RandomForestRegressor
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import warnings
+import argparse
+import os
+import sys
+
 warnings.filterwarnings('ignore')
 
 # Configuration des graphiques
@@ -35,12 +39,13 @@ class AnalyseurPerformanceScolaire:
     Classe principale pour l'analyse prédictive des performances scolaires
     """
     
-    def __init__(self, fichier_donnees=None):
+    def __init__(self, fichier_donnees=None, output_dir=None):
         """
         Initialise l'analyseur
         
         Args:
             fichier_donnees (str): Chemin vers le fichier Excel des données
+            output_dir (str): Dossier pour sauvegarder les sorties
         """
         self.donnees = None
         self.donnees_nettoyees = None
@@ -51,6 +56,7 @@ class AnalyseurPerformanceScolaire:
         self.modeles = {}
         self.meilleur_modele = None
         self.preprocesseur = None
+        self.output_dir = output_dir or os.getcwd()
         
         if fichier_donnees:
             self.charger_donnees(fichier_donnees)
@@ -344,9 +350,12 @@ class AnalyseurPerformanceScolaire:
         plt.xticks(rotation=0)
         
         plt.tight_layout()
-        plt.show()
         
-        print("   ✓ Visualisations générées")
+        output_file = os.path.join(self.output_dir, 'visualisation_donnees.png')
+        plt.savefig(output_file)
+        plt.close()
+
+        print(f"   ✓ Visualisations générées et sauvegardées: {output_file}")
     
     def preparer_modelisation(self):
         """
@@ -528,7 +537,11 @@ class AnalyseurPerformanceScolaire:
                     f'{width:.3f}', ha='left', va='center', fontsize=9)
         
         plt.tight_layout()
-        plt.show()
+        output_file = os.path.join(self.output_dir, 'importance_variables.png')
+        plt.savefig(output_file)
+        plt.close()
+
+        print(f"   ✓ Graphique importance sauvegardé: {output_file}")
         
         return importance_df
     
@@ -699,9 +712,10 @@ class AnalyseurPerformanceScolaire:
         contenu_rapport = "\n".join(rapport)
         
         try:
-            with open('rapport_analyse_scolaire.md', 'w', encoding='utf-8') as f:
+            output_file = os.path.join(self.output_dir, 'rapport_analyse_scolaire.md')
+            with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(contenu_rapport)
-            print("   ✓ Rapport sauvegardé: rapport_analyse_scolaire.md")
+            print(f"   ✓ Rapport sauvegardé: {output_file}")
         except Exception as e:
             print(f"   ⚠ Erreur lors de la sauvegarde: {e}")
         
@@ -727,9 +741,11 @@ class AnalyseurPerformanceScolaire:
         # Générer un petit échantillon de 30 élèves
         donnees_test = self.generer_donnees_synthetiques(30)
         
+        output_path = os.path.join(self.output_dir, nom_fichier)
+
         try:
-            donnees_test.to_excel(nom_fichier, index=False)
-            print(f"   ✓ Fichier exporté: {nom_fichier}")
+            donnees_test.to_excel(output_path, index=False)
+            print(f"   ✓ Fichier exporté: {output_path}")
             print(f"   • {len(donnees_test)} élèves")
             print(f"   • {len(donnees_test.columns)} variables")
             
@@ -792,23 +808,41 @@ def main():
     """
     Fonction principale pour exécuter l'analyse
     """
+    parser = argparse.ArgumentParser(description='Analyse Prédictive des Performances Scolaires')
+    parser.add_argument('--file', help='Chemin vers le fichier Excel de données')
+    parser.add_argument('--output-dir', help='Dossier de sortie pour les résultats')
+    args = parser.parse_args()
+
     print("🏫 SYSTÈME D'ANALYSE PRÉDICTIVE DES PERFORMANCES SCOLAIRES")
     print("=" * 70)
     print("Version 1.0 - Spécialisé pour l'éducation")
     print()
     
+    output_dir = args.output_dir if args.output_dir else os.getcwd()
+    if not os.path.exists(output_dir):
+        try:
+            os.makedirs(output_dir)
+        except OSError as e:
+            print(f"Erreur lors de la création du dossier de sortie: {e}")
+            sys.exit(1)
+
     # Créer l'analyseur
-    analyseur = AnalyseurPerformanceScolaire()
+    analyseur = AnalyseurPerformanceScolaire(output_dir=output_dir)
     
-    # Option 1: Charger des données existantes
-    analyseur.charger_donnees('joins.xlsx')
-    
-    # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
-    print("🔄 Démarrage de l'analyse avec des données synthétiques...")
-    print()
-    
-    # Lancer l'analyse complète
-    analyseur.analyse_complete(generer_donnees=True)
+    if args.file:
+        print(f"Chargement des données depuis: {args.file}")
+        if analyseur.charger_donnees(args.file):
+             analyseur.analyse_complete(generer_donnees=False)
+        else:
+             print("Impossible de charger les données. Fin du programme.")
+             sys.exit(1)
+    else:
+        # Option 2: Utiliser des données synthétiques (recommandé pour la démonstration)
+        print("🔄 Démarrage de l'analyse avec des données synthétiques...")
+        print()
+
+        # Lancer l'analyse complète
+        analyseur.analyse_complete(generer_donnees=True)
     
     print()
     print("📚 GUIDE D'UTILISATION:")

@@ -1,0 +1,61 @@
+{
+  "name": "education-analysis-app",
+  "version": "1.0.0",
+  "description": "Analyse Prédictive des Performances Scolaires",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
+    "build": "tsc && vite build && tsc -p electron/tsconfig.json && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "electron-squirrel-startup": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^18.15.11",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.0",
+    "electron": "^24.1.2",
+    "electron-builder": "^24.0.0",
+    "concurrently": "^8.0.1",
+    "wait-on": "^7.0.1",
+    "cross-env": "^7.0.3"
+  },
+  "build": {
+    "appId": "com.education.analysis",
+    "productName": "EducationAnalysis",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "Claude4_model",
+        "to": "Claude4_model",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true
+    }
+  }
+}
