@@ -406,6 +406,12 @@
                     <input type="text" class="form-control" id="etablissement"
                         placeholder="Nom de votre établissement scolaire" required>
                 </div>
+
+                <div class="question">
+                    <label for="dureeTrajet">Durée totale de trajet aller-retour (en minutes)</label>
+                    <input type="number" class="form-control" id="dureeTrajet" min="0" max="300" step="5"
+                        placeholder="Durée totale A/R en minutes">
+                </div>
             </div>
         </div>
 
@@ -513,6 +519,42 @@
                         <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSciences">
                         <span class="scale-label">Très intéressé</span>
                         <div class="scale-value" id="motivationSciencesValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question" id="questionEnsScientifique" style="display: none;">
+                    <label>Quel est votre niveau d'intérêt pour l'enseignement scientifique ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5"
+                            id="motivationEnsScientifique">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationEnsScientifiqueValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question" id="questionEPS" style="display: none;">
+                    <label>Quel est votre niveau d'intérêt pour l'Éducation Physique et Sportive ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationEPS">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationEPSValue">5</div>
+                    </div>
+                </div>
+
+                <div class="question" id="questionSpecialite" style="display: none;">
+                    <label>Quelle est votre spécialité ?</label>
+                    <input type="text" class="form-control" id="nomSpecialite" placeholder="Nom de votre spécialité">
+                    <div style="margin-top: 15px;">
+                        <label>Quel est votre niveau d'intérêt pour votre spécialité ?</label>
+                        <div class="scale-container">
+                            <span class="scale-label">Aucun intérêt</span>
+                            <input type="range" class="scale-input" min="0" max="10" value="5"
+                                id="motivationSpecialite">
+                            <span class="scale-label">Très intéressé</span>
+                            <div class="scale-value" id="motivationSpecialiteValue">5</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1424,6 +1466,14 @@
             });
         });
 
+
+        // Toggle visibility of terminale-specific subjects based on class selection
+        document.getElementById('classe').addEventListener('change', function () {
+            const isTerminale = this.value === 'terminale';
+            document.getElementById('questionEnsScientifique').style.display = isTerminale ? 'block' : 'none';
+            document.getElementById('questionEPS').style.display = isTerminale ? 'block' : 'none';
+            document.getElementById('questionSpecialite').style.display = isTerminale ? 'block' : 'none';
+        });
 
         // Initial setup
         updateProgress();
