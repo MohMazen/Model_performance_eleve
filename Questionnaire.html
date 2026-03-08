@@ -522,6 +522,16 @@
                     </div>
                 </div>
 
+                <div class="question">
+                    <label>Quel est votre niveau d'intérêt pour l'Éducation Physique et Sportive ?</label>
+                    <div class="scale-container">
+                        <span class="scale-label">Aucun intérêt</span>
+                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationEPS">
+                        <span class="scale-label">Très intéressé</span>
+                        <div class="scale-value" id="motivationEPSValue">5</div>
+                    </div>
+                </div>
+
                 <div class="question" id="questionEnsScientifique" style="display: none;">
                     <label>Quel est votre niveau d'intérêt pour l'enseignement scientifique ?</label>
                     <div class="scale-container">
@@ -533,27 +543,79 @@
                     </div>
                 </div>
 
-                <div class="question" id="questionEPS" style="display: none;">
-                    <label>Quel est votre niveau d'intérêt pour l'Éducation Physique et Sportive ?</label>
-                    <div class="scale-container">
-                        <span class="scale-label">Aucun intérêt</span>
-                        <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationEPS">
-                        <span class="scale-label">Très intéressé</span>
-                        <div class="scale-value" id="motivationEPSValue">5</div>
+                <!-- Spécialités 1ère (3 spécialités) -->
+                <div class="question" id="questionSpecialite1ere1" style="display: none;">
+                    <label>Spécialité 1 — Nom :</label>
+                    <input type="text" class="form-control" id="nomSpecialite1ere1"
+                        placeholder="Nom de la spécialité 1">
+                    <div style="margin-top: 15px;">
+                        <label>Niveau d'intérêt pour cette spécialité :</label>
+                        <div class="scale-container">
+                            <span class="scale-label">Aucun intérêt</span>
+                            <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSpe1ere1">
+                            <span class="scale-label">Très intéressé</span>
+                            <div class="scale-value" id="motivationSpe1ere1Value">5</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="question" id="questionSpecialite" style="display: none;">
-                    <label>Quelle est votre spécialité ?</label>
-                    <input type="text" class="form-control" id="nomSpecialite" placeholder="Nom de votre spécialité">
+                <div class="question" id="questionSpecialite1ere2" style="display: none;">
+                    <label>Spécialité 2 — Nom :</label>
+                    <input type="text" class="form-control" id="nomSpecialite1ere2"
+                        placeholder="Nom de la spécialité 2">
                     <div style="margin-top: 15px;">
-                        <label>Quel est votre niveau d'intérêt pour votre spécialité ?</label>
+                        <label>Niveau d'intérêt pour cette spécialité :</label>
                         <div class="scale-container">
                             <span class="scale-label">Aucun intérêt</span>
-                            <input type="range" class="scale-input" min="0" max="10" value="5"
-                                id="motivationSpecialite">
+                            <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSpe1ere2">
                             <span class="scale-label">Très intéressé</span>
-                            <div class="scale-value" id="motivationSpecialiteValue">5</div>
+                            <div class="scale-value" id="motivationSpe1ere2Value">5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="questionSpecialite1ere3" style="display: none;">
+                    <label>Spécialité 3 — Nom :</label>
+                    <input type="text" class="form-control" id="nomSpecialite1ere3"
+                        placeholder="Nom de la spécialité 3">
+                    <div style="margin-top: 15px;">
+                        <label>Niveau d'intérêt pour cette spécialité :</label>
+                        <div class="scale-container">
+                            <span class="scale-label">Aucun intérêt</span>
+                            <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSpe1ere3">
+                            <span class="scale-label">Très intéressé</span>
+                            <div class="scale-value" id="motivationSpe1ere3Value">5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spécialités Terminale (2 spécialités) -->
+                <div class="question" id="questionSpecialiteTerm1" style="display: none;">
+                    <label>Spécialité 1 — Nom :</label>
+                    <input type="text" class="form-control" id="nomSpecialiteTerm1"
+                        placeholder="Nom de la spécialité 1">
+                    <div style="margin-top: 15px;">
+                        <label>Niveau d'intérêt pour cette spécialité :</label>
+                        <div class="scale-container">
+                            <span class="scale-label">Aucun intérêt</span>
+                            <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSpeTerm1">
+                            <span class="scale-label">Très intéressé</span>
+                            <div class="scale-value" id="motivationSpeTerm1Value">5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question" id="questionSpecialiteTerm2" style="display: none;">
+                    <label>Spécialité 2 — Nom :</label>
+                    <input type="text" class="form-control" id="nomSpecialiteTerm2"
+                        placeholder="Nom de la spécialité 2">
+                    <div style="margin-top: 15px;">
+                        <label>Niveau d'intérêt pour cette spécialité :</label>
+                        <div class="scale-container">
+                            <span class="scale-label">Aucun intérêt</span>
+                            <input type="range" class="scale-input" min="0" max="10" value="5" id="motivationSpeTerm2">
+                            <span class="scale-label">Très intéressé</span>
+                            <div class="scale-value" id="motivationSpeTerm2Value">5</div>
                         </div>
                     </div>
                 </div>
@@ -680,13 +742,47 @@
                 </div>
 
                 <div class="question">
-                    <label>À quelle heure vous couchez-vous habituellement ?</label>
-                    <input type="time" class="form-control" id="heureCoucher">
+                    <label for="heureCoucher">À quelle heure vous couchez-vous habituellement ?</label>
+                    <select class="form-control" id="heureCoucher">
+                        <option value="" disabled selected>Sélectionnez une heure</option>
+                        <option value="19:00">19:00</option>
+                        <option value="19:30">19:30</option>
+                        <option value="20:00">20:00</option>
+                        <option value="20:30">20:30</option>
+                        <option value="21:00">21:00</option>
+                        <option value="21:30">21:30</option>
+                        <option value="22:00">22:00</option>
+                        <option value="22:30">22:30</option>
+                        <option value="23:00">23:00</option>
+                        <option value="23:30">23:30</option>
+                        <option value="00:00">00:00</option>
+                        <option value="00:30">00:30</option>
+                        <option value="01:00">01:00</option>
+                        <option value="01:30">01:30</option>
+                        <option value="02:00">02:00</option>
+                        <option value="02:30">02:30</option>
+                        <option value="03:00">03:00</option>
+                    </select>
                 </div>
 
                 <div class="question">
-                    <label>À quelle heure vous levez-vous habituellement ?</label>
-                    <input type="time" class="form-control" id="heureLever">
+                    <label for="heureLever">À quelle heure vous levez-vous habituellement ?</label>
+                    <select class="form-control" id="heureLever">
+                        <option value="" disabled selected>Sélectionnez une heure</option>
+                        <option value="04:00">04:00</option>
+                        <option value="04:30">04:30</option>
+                        <option value="05:00">05:00</option>
+                        <option value="05:30">05:30</option>
+                        <option value="06:00">06:00</option>
+                        <option value="06:30">06:30</option>
+                        <option value="07:00">07:00</option>
+                        <option value="07:30">07:30</option>
+                        <option value="08:00">08:00</option>
+                        <option value="08:30">08:30</option>
+                        <option value="09:00">09:00</option>
+                        <option value="09:30">09:30</option>
+                        <option value="10:00">10:00</option>
+                    </select>
                 </div>
             </div>
 
@@ -1467,12 +1563,23 @@
         });
 
 
-        // Toggle visibility of terminale-specific subjects based on class selection
+        // Toggle visibility of class-specific subjects based on class selection
         document.getElementById('classe').addEventListener('change', function () {
-            const isTerminale = this.value === 'terminale';
+            const val = this.value;
+            const is1ere = val === '1ere';
+            const isTerminale = val === 'terminale';
+
+            // Enseignement scientifique: Terminale only
             document.getElementById('questionEnsScientifique').style.display = isTerminale ? 'block' : 'none';
-            document.getElementById('questionEPS').style.display = isTerminale ? 'block' : 'none';
-            document.getElementById('questionSpecialite').style.display = isTerminale ? 'block' : 'none';
+
+            // Spécialités 1ère (3)
+            document.getElementById('questionSpecialite1ere1').style.display = is1ere ? 'block' : 'none';
+            document.getElementById('questionSpecialite1ere2').style.display = is1ere ? 'block' : 'none';
+            document.getElementById('questionSpecialite1ere3').style.display = is1ere ? 'block' : 'none';
+
+            // Spécialités Terminale (2)
+            document.getElementById('questionSpecialiteTerm1').style.display = isTerminale ? 'block' : 'none';
+            document.getElementById('questionSpecialiteTerm2').style.display = isTerminale ? 'block' : 'none';
         });
 
         // Initial setup
