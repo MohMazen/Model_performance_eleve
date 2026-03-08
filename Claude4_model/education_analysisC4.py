@@ -528,19 +528,22 @@ class AnalyseurPerformanceScolaire:
             'Importance': importances
         }).sort_values('Importance', ascending=False)
         
+        # Convertir en pourcentage (proportion relative)
+        importance_df['Importance_Pct'] = (importance_df['Importance'] / importance_df['Importance'].sum()) * 100
+        
         # Afficher le top 15
-        print(f"\n📊 TOP 15 DES VARIABLES LES PLUS IMPORTANTES:")
+        print(f"\n📊 TOP 15 DES VARIABLES LES PLUS IMPORTANTES (en %):")
         print("-" * 60)
         for i, (_, row) in enumerate(importance_df.head(15).iterrows(), 1):
-            print(f"{i:2d}. {row['Variable']:<30} {row['Importance']:.4f}")
+            print(f"{i:2d}. {row['Variable']:<30} {row['Importance_Pct']:.2f}%")
         
         # Visualisation
         plt.figure(figsize=(12, 8))
         top_features = importance_df.head(15)
         
-        bars = plt.barh(range(len(top_features)), top_features['Importance'], color='steelblue', alpha=0.8)
+        bars = plt.barh(range(len(top_features)), top_features['Importance_Pct'], color='steelblue', alpha=0.8)
         plt.yticks(range(len(top_features)), top_features['Variable'])
-        plt.xlabel('Importance')
+        plt.xlabel('Importance (%)')
         plt.title('Top 15 des Variables les Plus Importantes pour Prédire la Réussite Scolaire', 
                  fontsize=14, fontweight='bold', pad=20)
         plt.gca().invert_yaxis()
@@ -548,8 +551,8 @@ class AnalyseurPerformanceScolaire:
         # Ajouter les valeurs sur les barres
         for i, bar in enumerate(bars):
             width = bar.get_width()
-            plt.text(width + max(top_features['Importance']) * 0.01, bar.get_y() + bar.get_height()/2,
-                    f'{width:.3f}', ha='left', va='center', fontsize=9)
+            plt.text(width + 0.5, bar.get_y() + bar.get_height()/2,
+                    f'{width:.1f}%', ha='left', va='center', fontsize=9, fontweight='bold')
         
         plt.tight_layout()
         plt.show()
@@ -755,8 +758,8 @@ class AnalyseurPerformanceScolaire:
         """
         print(f"\n💾 EXPORT DES DONNÉES DE TEST")
         
-        # Générer un petit échantillon de 30 élèves
-        donnees_test = self.generer_donnees_synthetiques(30)
+        # Générer un échantillon de 100 élèves
+        donnees_test = self.generer_donnees_synthetiques(100)
         
         try:
             donnees_test.to_csv(nom_fichier, index=False, sep=';', encoding='utf-8-sig')
