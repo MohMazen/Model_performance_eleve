@@ -1470,12 +1470,208 @@
         nextBtn.addEventListener('click', showNextSection);
         prevBtn.addEventListener('click', showPrevSection);
 
-        submitBtn.addEventListener('click', () => {
-            // Here you would collect all the form data and send it
-            // For now, let's just show the completion section
-            currentSectionIndex = sections.length - 1;
-            updateProgress();
-            document.querySelector('.navigation').style.display = 'none'; // Hide navigation buttons on completion
+        // ===== DATA COLLECTION & CSV SAVE =====
+
+        function getVal(id) {
+            const el = document.getElementById(id);
+            if (!el) return '';
+            return el.value || '';
+        }
+
+        function getRadio(name) {
+            const checked = document.querySelector(`input[name="${name}"]:checked`);
+            return checked ? checked.value : '';
+        }
+
+        function getCheckboxes(name) {
+            const checked = document.querySelectorAll(`input[name="${name}"]:checked`);
+            return Array.from(checked).map(cb => cb.value).join('; ');
+        }
+
+        function collectFormData() {
+            const now = new Date();
+            const timestamp = now.toLocaleString('fr-FR');
+
+            return {
+                // Horodatage
+                'Horodatage': timestamp,
+
+                // Section 1 - État civil
+                'Nom': getVal('nom'),
+                'Prenom': getVal('prenom'),
+                'Adresse': getVal('adresse'),
+                'Age': getVal('age'),
+                'Classe': getVal('classe'),
+                'Etablissement': getVal('etablissement'),
+                'Duree_trajet_AR_min': getVal('dureeTrajet'),
+
+                // Section 2 - Capacités organisationnelles
+                'Organisation': getVal('organisation'),
+                'Gestion_temps': getRadio('gestionTemps'),
+
+                // Section 3 - Motivation et engagement
+                'Interet_francais': getVal('motivationFrancais'),
+                'Interet_maths': getVal('motivationMaths'),
+                'Interet_HGEMC': getVal('motivationHGEMC'),
+                'Interet_anglais': getVal('motivationAnglais'),
+                'Interet_arabe': getVal('motivationArabe'),
+                'Interet_sciences': getVal('motivationSciences'),
+                'Interet_EPS': getVal('motivationEPS'),
+                'Interet_ens_scientifique': getVal('motivationEnsScientifique'),
+                'Specialite1ere_1_nom': getVal('nomSpecialite1ere1'),
+                'Specialite1ere_1_interet': getVal('motivationSpe1ere1'),
+                'Specialite1ere_2_nom': getVal('nomSpecialite1ere2'),
+                'Specialite1ere_2_interet': getVal('motivationSpe1ere2'),
+                'Specialite1ere_3_nom': getVal('nomSpecialite1ere3'),
+                'Specialite1ere_3_interet': getVal('motivationSpe1ere3'),
+                'SpecialiteTerm_1_nom': getVal('nomSpecialiteTerm1'),
+                'SpecialiteTerm_1_interet': getVal('motivationSpeTerm1'),
+                'SpecialiteTerm_2_nom': getVal('nomSpecialiteTerm2'),
+                'SpecialiteTerm_2_interet': getVal('motivationSpeTerm2'),
+                'Motivation_famille': getVal('motivationFamille'),
+                'Motivation_recompenses': getVal('motivationRecompenses'),
+                'Perseverance_1': getVal('grit1'),
+                'Perseverance_2': getVal('grit2'),
+                'Perseverance_3': getVal('grit3'),
+
+                // Section 4 - Temps d'étude et écrans
+                'Heures_etude_soir': getVal('heuresEtude'),
+                'Heures_jeux_video': getVal('jeuxVideo'),
+                'Heures_reseaux_sociaux': getVal('reseauxSociaux'),
+                'Heures_streaming': getVal('streaming'),
+                'Heures_sites_educatifs': getVal('sitesEducatifs'),
+
+                // Section 5 - Sommeil et bien-être
+                'Heures_sommeil': getVal('heuresSommeil'),
+                'Qualite_sommeil': getVal('qualiteSommeil'),
+                'Heure_coucher': getVal('heureCoucher'),
+                'Heure_lever': getVal('heureLever'),
+                'Stress_1': getRadio('stress1'),
+                'Stress_2': getRadio('stress2'),
+
+                // Section 6 - Nutrition et activité physique
+                'Nb_repas': getRadio('nbRepas'),
+                'Repas_equilibres': getRadio('repasEquilibres'),
+                'Activite_sportive': getRadio('activiteSportive'),
+                'Heures_activite_physique': getVal('heuresActivite'),
+                'Niveau_sportif': getRadio('niveauSportif'),
+
+                // Section 7 - Relations et soutien
+                'Pref_travail': getRadio('travailPref'),
+                'Soutien_mutuel': getRadio('soutienMutuel'),
+                'Tuteur': getRadio('tuteur'),
+                'Qualite_tuteur': getVal('qualiteTuteurScore'),
+                'Mentor': getRadio('mentor'),
+                'Qualite_mentor': getVal('qualiteMentorScore'),
+
+                // Section 8 - Confiance en soi et bien-être émotionnel
+                'Confiance_soi': getVal('confianceSoi'),
+                'Estime_soi': getVal('estimeSoi'),
+                'Evitement': getRadio('evitement'),
+                'Abandon': getRadio('abandon'),
+                'Etat_psychologique': getCheckboxes('etatPsychologique'),
+                'Autre_etat_psy': getVal('autreEtatPsy'),
+                'Suivi_psy': getRadio('suiviPsy'),
+                'Stress_examens': getVal('stressExamens'),
+                'Pression_familiale': getVal('pressionFamiliale'),
+
+                // Section 9 - Environnement de travail et soutien scolaire
+                'Bureau_personnel': getRadio('bureauPersonnel'),
+                'Calme_maison': getVal('calmeMaison'),
+                'Lumiere_adaptee': getRadio('lumiereAdaptee'),
+                'Perturbations': getRadio('perturbations'),
+                'Temps_libre': getVal('tempsLibre'),
+                'Taches_menageres': getRadio('tachesMenageres'),
+                'Heures_garde_freres_soeurs': getVal('gardeFreresSoeurs'),
+                'Soutien_matieres': getCheckboxes('soutienMatiere'),
+                'Heures_soutien_francais': getVal('heures_francais'),
+                'Heures_soutien_maths': getVal('heures_maths'),
+                'Heures_soutien_sciences': getVal('heures_sciences'),
+                'Heures_soutien_anglais': getVal('heures_anglais'),
+                'Heures_soutien_histoire_geo': getVal('heures_histoire_geo'),
+                'Abonnement_plateforme': getRadio('abonnementPlateforme'),
+                'Nom_plateforme': getVal('nomPlateformeInput'),
+                'Frequence_mediatheque': getRadio('frequenceMediathèque'),
+            };
+        }
+
+        function escapeCsvField(field) {
+            const str = String(field);
+            if (str.includes(';') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        async function saveToCSV(data) {
+            const headers = Object.keys(data);
+            const newRow = headers.map(h => escapeCsvField(data[h] || '')).join(';');
+
+            try {
+                // Open file picker (defaults to Documents folder)
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: 'questionnaire_reponses.csv',
+                    startIn: 'documents',
+                    types: [{
+                        description: 'Fichier CSV',
+                        accept: { 'text/csv': ['.csv'] }
+                    }]
+                });
+
+                // Read existing content if the file already exists
+                let existingContent = '';
+                try {
+                    const file = await fileHandle.getFile();
+                    existingContent = await file.text();
+                } catch (e) {
+                    // File is new or empty, no existing content
+                }
+
+                // Build new content
+                let finalContent;
+                if (existingContent && existingContent.trim().length > 0) {
+                    // File exists with content: append the new row
+                    const trimmed = existingContent.trimEnd();
+                    finalContent = trimmed + '\n' + newRow + '\n';
+                } else {
+                    // New file: write BOM + headers + first row
+                    const headerLine = headers.map(escapeCsvField).join(';');
+                    finalContent = '\uFEFF' + headerLine + '\n' + newRow + '\n';
+                }
+
+                // Write to file
+                const writable = await fileHandle.createWritable();
+                await writable.write(finalContent);
+                await writable.close();
+
+                return true;
+
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    // User cancelled the file picker
+                    return false;
+                }
+                console.error('Erreur lors de la sauvegarde:', err);
+                alert('Erreur lors de la sauvegarde du fichier. Vérifiez que votre navigateur supporte cette fonctionnalité (Chrome/Edge recommandé).');
+                return false;
+            }
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const formData = collectFormData();
+            const saved = await saveToCSV(formData);
+
+            if (saved) {
+                // Show completion section
+                currentSectionIndex = sections.length - 1;
+                updateProgress();
+
+                // Update completion message
+                const completionText = document.querySelector('.completion-text');
+                completionText.innerHTML = `Vos réponses ont été sauvegardées avec succès dans le fichier <em>questionnaire_reponses.csv</em> !`;
+
+                document.querySelector('.navigation').style.display = 'none';
+            }
         });
 
 
