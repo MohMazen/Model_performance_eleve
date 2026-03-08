@@ -57,13 +57,13 @@ class AnalyseurPerformanceScolaire:
 
     def charger_donnees(self, fichier_donnees):
         """
-        Charge les données depuis un fichier Excel
+        Charge les données depuis un fichier CSV
 
         Args:
             fichier_donnees (str): Chemin vers le fichier
         """
         try:
-            self.donnees = pd.read_excel(fichier_donnees)
+            self.donnees = pd.read_csv(fichier_donnees, sep=';', encoding='utf-8-sig')
             print(f"✓ Données chargées avec succès: {self.donnees.shape}")
             return True
         except Exception as e:
@@ -118,6 +118,22 @@ class AnalyseurPerformanceScolaire:
             'climat_scolaire': np.random.beta(3, 2, n_eleves) * 9 + 1,
             'soutien_scolaire': np.random.choice(['Oui', 'Non'], n_eleves, p=[0.3, 0.7]),
             
+            # Nouveaux champs Questionnaire
+            'nom': [f"NOM_{i}" for i in range(n_eleves)],
+            'prenom': [f"PRENOM_{i}" for i in range(n_eleves)],
+            'etat_civil': np.random.choice(['Célibataire', 'Marié', 'Divorcé', 'Veuf'], n_eleves, p=[0.9, 0.05, 0.03, 0.02]),
+            'duree_trajet': np.random.gamma(2, 15, n_eleves).clip(5, 120),
+            'heure_coucher': [f"{np.random.randint(21, 24)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
+            'heure_lever': [f"{np.random.randint(6, 9)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
+            
+            # Matières spécifiques
+            'classe': np.random.choice(['1ère', 'Terminale'], n_eleves),
+            'education_physique': np.random.normal(12, 3, n_eleves).clip(0, 20),
+            'matiere_enseignement_scientifique': np.random.normal(11, 4, n_eleves).clip(0, 20),
+            'specialite1': np.random.normal(13, 3, n_eleves).clip(0, 20),
+            'specialite2': np.random.normal(13, 3, n_eleves).clip(0, 20),
+            'specialite3': np.random.normal(13, 3, n_eleves).clip(0, 20),
+            
             # Activités extrascolaires
             'sport': np.random.choice(['Oui', 'Non'], n_eleves, p=[0.6, 0.4]),
             'musique': np.random.choice(['Oui', 'Non'], n_eleves, p=[0.4, 0.6]),
@@ -160,6 +176,14 @@ class AnalyseurPerformanceScolaire:
             
             # Impact négatif des absences
             bonus -= df.loc[i, 'absences'] * 0.05
+            
+            # Impact de la durée du trajet
+            if df.loc[i, 'duree_trajet'] > 60:
+                bonus -= 0.7
+            
+            # Impact de l'état civil (stabilité familiale pour les plus âgés)
+            if df.loc[i, 'etat_civil'] == 'Marié':
+                bonus += 0.5
             
             # Ajuster les notes
             df.loc[i, 'note_francais'] = np.clip(df.loc[i, 'note_francais'] + bonus, 0, 20)
@@ -358,8 +382,8 @@ class AnalyseurPerformanceScolaire:
         print(f"\n🔧 PRÉPARATION POUR LA MODÉLISATION")
         
         # Définir les variables explicatives (X) et la cible (y)
-        colonnes_exclues = ['note_francais', 'note_maths', 'note_lecture', 'note_moyenne']
-        X = self.donnees_nettoyees.drop(columns=colonnes_exclues)
+        colonnes_exclues = ['nom', 'prenom', 'note_francais', 'note_maths', 'note_lecture', 'note_moyenne']
+        X = self.donnees_nettoyees.drop(columns=[c for c in colonnes_exclues if c in self.donnees_nettoyees.columns])
         y = self.donnees_nettoyees['note_moyenne']
         
         # Identifier les colonnes numériques et catégorielles
@@ -629,6 +653,13 @@ class AnalyseurPerformanceScolaire:
                 rapport.append("**Performance par type d'établissement:**")
                 for type_etab, stats in etab_stats.iterrows():
                     rapport.append(f"- {type_etab}: {stats['mean']:.2f}/20 (n={stats['count']})")
+                    
+            # Durée trajet
+            if 'duree_trajet' in self.donnees_nettoyees.columns:
+                rapport.append("")
+                rapport.append(f"**Impact du temps de trajet :** La durée moyenne de trajet est de {self.donnees_nettoyees['duree_trajet'].mean():.1f} minutes.")
+                correlation_trajet = self.donnees_nettoyees['duree_trajet'].corr(self.donnees_nettoyees['note_moyenne'])
+                rapport.append(f"La corrélation avec la note moyenne est de {correlation_trajet:.3f}.")
         
         rapport.append("")
         
@@ -715,7 +746,7 @@ class AnalyseurPerformanceScolaire:
         
         return contenu_rapport
     
-    def exporter_donnees_test(self, nom_fichier='test_synthetique.xlsx'):
+    def exporter_donnees_test(self, nom_fichier='test_synthetique.csv'):
         """
         Exporte un échantillon de données synthétiques pour les tests
         
@@ -728,7 +759,7 @@ class AnalyseurPerformanceScolaire:
         donnees_test = self.generer_donnees_synthetiques(30)
         
         try:
-            donnees_test.to_excel(nom_fichier, index=False)
+            donnees_test.to_csv(nom_fichier, index=False, sep=';', encoding='utf-8-sig')
             print(f"   ✓ Fichier exporté: {nom_fichier}")
             print(f"   • {len(donnees_test)} élèves")
             print(f"   • {len(donnees_test.columns)} variables")
@@ -779,7 +810,7 @@ class AnalyseurPerformanceScolaire:
             print("=" * 50)
             print("📁 Fichiers générés:")
             print("   • rapport_analyse_scolaire.md")
-            print("   • test_synthetique.xlsx")
+            print("   • test_synthetique.csv")
             print("   • Graphiques affichés")
             
         except Exception as e:
