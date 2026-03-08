@@ -1608,39 +1608,38 @@
             const newRow = headers.map(h => escapeCsvField(data[h] || '')).join(';');
 
             try {
-                // Open file picker (defaults to Documents folder)
+                // 1. Propose sauvegarde (recherche du fichier existant dans Documents)
                 const fileHandle = await window.showSaveFilePicker({
                     suggestedName: 'questionnaire_reponses.csv',
                     startIn: 'documents',
                     types: [{
-                        description: 'Fichier CSV',
+                        description: 'Fichier CSV (Séparateur point-virgule)',
                         accept: { 'text/csv': ['.csv'] }
                     }]
                 });
 
-                // Read existing content if the file already exists
+                // 2. Lecture du contenu existant
                 let existingContent = '';
                 try {
                     const file = await fileHandle.getFile();
                     existingContent = await file.text();
                 } catch (e) {
-                    // File is new or empty, no existing content
-                    console.log('Nouveau fichier ou fichier vide.');
+                    console.log('Nouveau fichier ou accès initial.');
                 }
 
-                // Build new content
+                // 3. Préparation du contenu final
                 let finalContent;
                 if (existingContent && existingContent.trim().length > 0) {
-                    // File exists with content: append the new row
+                    // Si le fichier existe, on ajoute la ligne à la fin
                     const trimmed = existingContent.trimEnd();
                     finalContent = trimmed + '\n' + newRow + '\n';
                 } else {
-                    // New file: write BOM + headers + first row
+                    // Si c'est un nouveau fichier, on ajoute le BOM (pour Excel) et les entêtes
                     const headerLine = headers.map(escapeCsvField).join(';');
                     finalContent = '\uFEFF' + headerLine + '\n' + newRow + '\n';
                 }
 
-                // Write to file
+                // 4. Écriture du fichier mis à jour
                 const writable = await fileHandle.createWritable();
                 await writable.write(finalContent);
                 await writable.close();
@@ -1649,11 +1648,11 @@
 
             } catch (err) {
                 if (err.name === 'AbortError') {
-                    // User cancelled the file picker
+                    // L'utilisateur a annulé la fenêtre de sélection
                     return false;
                 }
                 console.error('Erreur lors de la sauvegarde:', err);
-                alert('Erreur lors de la sauvegarde du fichier. Assurez-vous d\'utiliser un navigateur moderne (Chrome ou Edge).');
+                alert('Erreur lors de la sauvegarde. Assurez-vous d\'utiliser Chrome ou Edge.');
                 return false;
             }
         }
@@ -1663,13 +1662,12 @@
             const saved = await saveToCSV(formData);
 
             if (saved) {
-                // Show completion section
+                // Afficher l'écran de succès
                 currentSectionIndex = sections.length - 1;
                 updateProgress();
 
-                // Update completion message
                 const completionText = document.querySelector('.completion-text');
-                completionText.innerHTML = `Vos réponses ont été sauvegardées avec succès dans le fichier <em>questionnaire_reponses.csv</em> !`;
+                completionText.innerHTML = `Vos réponses ont été ajoutées avec succès dans le fichier <em>questionnaire_reponses.csv</em> !`;
 
                 document.querySelector('.navigation').style.display = 'none';
             }
