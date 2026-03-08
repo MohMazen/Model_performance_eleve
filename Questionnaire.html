@@ -1625,6 +1625,7 @@
                     existingContent = await file.text();
                 } catch (e) {
                     // File is new or empty, no existing content
+                    console.log('Nouveau fichier ou fichier vide.');
                 }
 
                 // Build new content
@@ -1652,7 +1653,7 @@
                     return false;
                 }
                 console.error('Erreur lors de la sauvegarde:', err);
-                alert('Erreur lors de la sauvegarde du fichier. Vérifiez que votre navigateur supporte cette fonctionnalité (Chrome/Edge recommandé).');
+                alert('Erreur lors de la sauvegarde du fichier. Assurez-vous d\'utiliser un navigateur moderne (Chrome ou Edge).');
                 return false;
             }
         }
