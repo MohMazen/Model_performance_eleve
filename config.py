@@ -2,8 +2,10 @@
 Configuration des constantes pour le projet d'analyse scolaire.
 """
 
+import os
+
 # Noms des fichiers
-DATA_FILE = 'test_synthetique.csv'
+DATA_FILE = os.path.join('Data', 'test_synthetique.csv')
 MODEL_FILE = 'model_final.joblib'
 REPORT_FILE = 'rapport_analyse_scolaire.md'
 LOG_FILE = 'analysis.log'

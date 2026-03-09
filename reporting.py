@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
-from .config import REPORT_FILE
+from config import REPORT_FILE
 
 logger = logging.getLogger(__name__)
 

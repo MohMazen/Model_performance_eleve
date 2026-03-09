@@ -4,7 +4,7 @@ Utilitaires pour le chargement, le nettoyage et la génération de données.
 import pandas as pd
 import numpy as np
 import logging
-from .config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
+from config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
 
 logger = logging.getLogger(__name__)
 

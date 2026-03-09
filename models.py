@@ -11,7 +11,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from xgboost import XGBRegressor, XGBClassifier
-from .config import TARGET_REG, TARGET_CLF, MODEL_FILE
+from config import TARGET_REG, TARGET_CLF, MODEL_FILE
 
 logger = logging.getLogger(__name__)
 

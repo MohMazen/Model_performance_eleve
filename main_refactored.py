@@ -11,12 +11,12 @@ from sklearn.metrics import mean_absolute_error, r2_score, accuracy_score, f1_sc
 # Ajout du répertoire parent au path pour les imports relatifs si exécuté directement
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .config import DATA_FILE, LOG_FILE, TARGET_REG, TARGET_CLF
-from .data_utils import generer_donnees_synthetiques, nettoyer_donnees, charger_donnees
-from .features import add_advanced_features, prenttoyer_horaires
-from .models import ModelManager
-from .explainability import generate_shap_analysis
-from .reporting import generer_visualisations, generer_rapport_markdown
+from config import DATA_FILE, LOG_FILE, TARGET_REG, TARGET_CLF
+from data_utils import generer_donnees_synthetiques, nettoyer_donnees, charger_donnees
+from features import add_advanced_features, prenttoyer_horaires
+from models import ModelManager
+from explainability import generate_shap_analysis
+from reporting import generer_visualisations, generer_rapport_markdown
 
 # Configuration du Logging
 logging.basicConfig(

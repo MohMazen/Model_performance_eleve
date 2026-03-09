@@ -4,7 +4,7 @@ Feature engineering et transformation des données.
 import pandas as pd
 import numpy as np
 import logging
-from .config import SEUIL_REUSSITE, TARGET_CLF
+from config import SEUIL_REUSSITE, TARGET_CLF
 
 logger = logging.getLogger(__name__)
 
