@@ -12,6 +12,10 @@ xgboost>=1.6.0
 # Visualisation
 matplotlib>=3.5.0
 seaborn>=0.11.0
+plotly>=5.10.0
+
+# Dashboard Streamlit
+streamlit>=1.20.0
 
 # Traitement de fichiers Excel
 openpyxl>=3.0.9
@@ -20,6 +24,7 @@ xlsxwriter>=3.0.0
 # Outils supplémentaires
 scipy>=1.9.0
 joblib>=1.1.0
+shap>=0.41.0
 
 # Pour les rapports (optionnel)
 jinja2>=3.1.0

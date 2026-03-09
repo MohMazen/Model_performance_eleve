@@ -37,11 +37,11 @@ analyseur.analyse_complete(generer_donnees=True)
 
 ### Utilisation avec vos propres données
 ```python
-# Charger vos données
-analyseur = AnalyseurPerformanceScolaire('mes_donnees.xlsx')
+# Charger vos données (le séparateur doit être ';')
+analyseur = AnalyseurPerformanceScolaire('mes_donnees.csv')
 
 # Ou charger après création
-analyseur.charger_donnees('mes_donnees.xlsx')
+analyseur.charger_donnees('mes_donnees.csv')
 
 # Lancer l'analyse
 analyseur.analyse_complete(generer_donnees=False)
@@ -79,9 +79,13 @@ analyseur.generer_rapport()
 #### 🧑‍🎓 Facteurs Individuels
 - `age`: Âge de l'élève
 - `genre`: Genre (M/F)
+- `nom`, `prenom`: Identité de l'élève [NOUVEAU]
+- `etat_civil`: Situation familiale (Célibataire, Marié, etc.) [NOUVEAU]
 - `note_francais`, `note_maths`, `note_lecture`: Notes par matière
 - `absences`, `retards`: Indicateurs d'assiduité
-- `heures_devoirs`, `heures_sommeil`: Temps de travail et repos
+- `heures_devoirs`: Temps de travail personnel
+- `duree_trajet`: Temps de transport en minutes [NOUVEAU]
+- `heure_coucher`, `heure_lever`: Horaires de repos (format 24h) [NOUVEAU]
 - `motivation`, `confiance_soi`, `stress`, `perseverance`: Facteurs psychologiques
 
 #### 👨‍👩‍👧‍👦 Facteurs Familiaux
@@ -91,12 +95,16 @@ analyseur.generer_rapport()
 - `nombre_fratrie`: Nombre de frères et sœurs
 
 #### 🏫 Facteurs Scolaires
+- `classe`: Niveau (1ère ou Terminale) [NOUVEAU]
 - `taille_classe`: Nombre d'élèves par classe
 - `type_etablissement`: Public/Privé
 - `climat_scolaire`: Qualité de l'environnement scolaire
 - `soutien_scolaire`: Aide supplémentaire
 
-#### 🎨 Activités Extrascolaires
+#### 🎨 Matières et Spécialités [DÉTAILLÉ]
+- `education_physique`: Note en EPS [NOUVEAU]
+- `matiere_enseignement_scientifique`: Note en enseignement scientifique [NOUVEAU]
+- `specialite1`, `specialite2`, `specialite3`: Notes dans les spécialités choisies [NOUVEAU]
 - `sport`, `musique`: Pratique d'activités
 - `lecture_loisir`: Temps de lecture plaisir
 - `temps_ecrans`: Temps passé sur écrans
@@ -143,7 +151,7 @@ analyseur.generer_rapport()
 Après l'exécution, le système génère automatiquement :
 
 - `rapport_analyse_scolaire.md`: Rapport de synthèse complet
-- `test_synthetique.xlsx`: Échantillon de données pour tests
+- `test_synthetique.csv`: Échantillon de données pour tests (Séparateur ';')
 - Graphiques et visualisations affichés
 
 ## 🎯 Métriques d'Évaluation
@@ -181,6 +189,11 @@ colonnes_correlation = ['note_moyenne', 'facteur1', 'facteur2', 'facteur3']
 # Personnaliser les seuils d'alerte
 seuil_difficulte = 10  # Note en dessous de laquelle un élève est "en difficulté"
 ```
+
+### Format des fichiers CSV
+Pour assurer une compatibilité optimale entre le questionnaire (HTML) et l'analyse (Python) :
+- **Séparateur** : Utilisez le point-virgule (`;`).
+- **Encodage** : Utilisez l'encodage `UTF-8 avec BOM` (utile pour Excel PC).
 
 ### Créer de Nouvelles Variables
 ```python
