@@ -33,3 +33,6 @@ markdown>=3.4.0
 # Pour les notebooks Jupyter (optionnel)
 jupyter>=1.0.0
 ipykernel>=6.15.0
+
+# Tests
+pytest>=7.0.0
