@@ -5,10 +5,10 @@ Configuration des constantes pour le projet d'analyse scolaire.
 import os
 
 # Noms des fichiers
-DATA_FILE = os.path.join('Data', 'test_synthetique.csv')
-MODEL_FILE = 'model_final.joblib'
-REPORT_FILE = 'rapport_analyse_scolaire.md'
-LOG_FILE = 'analysis.log'
+DATA_FILE = os.path.join('data', 'test_synthetique.csv')
+MODEL_FILE = os.path.join('outputs', 'model_final.joblib')
+REPORT_FILE = os.path.join('outputs', 'rapport_analyse_scolaire.md')
+LOG_FILE = os.path.join('outputs', 'analysis.log')
 
 # Paramètres de génération de données
 N_ELEVES_TRAIN = 300
@@ -24,3 +24,6 @@ ID_COLUMNS = ['nom', 'prenom']
 
 # Colonnes de notes (pour le calcul de la moyenne)
 GRADE_COLUMNS = ['note_francais', 'note_maths', 'note_lecture']
+
+# Colonnes à exclure avant modélisation
+COLS_TO_DROP = ['nom', 'prenom', 'note_francais', 'note_maths', 'note_lecture', 'heure_coucher', 'heure_lever']

@@ -1,19 +1,19 @@
 """
 Entraînement des modèles, tuning et persistance.
 """
-import pandas as pd
 import numpy as np
 import logging
 import joblib
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from xgboost import XGBRegressor, XGBClassifier
-from config import TARGET_REG, TARGET_CLF, MODEL_FILE
+from xgboost import XGBRegressor
+from src.config import MODEL_FILE
 
 logger = logging.getLogger(__name__)
+
 
 class ModelManager:
     def __init__(self):
@@ -25,10 +25,10 @@ class ModelManager:
         """Définit le preprocesseur automatique."""
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
-        
+
         num_transformer = Pipeline(steps=[('scaler', StandardScaler())])
         cat_transformer = Pipeline(steps=[('onehot', OneHotEncoder(handle_unknown='ignore'))])
-        
+
         self.preprocessor = ColumnTransformer(
             transformers=[
                 ('num', num_transformer, num_cols),
@@ -40,13 +40,13 @@ class ModelManager:
         """Entraîne et tune un modèle de régression."""
         logger.info("Entraînement du modèle de régression (XGBoost)...")
         pipeline = Pipeline(steps=[('pre', self.preprocessor), ('model', XGBRegressor(random_state=42))])
-        
+
         param_dist = {
             'model__n_estimators': [50, 100, 200],
             'model__max_depth': [3, 5, 7],
             'model__learning_rate': [0.01, 0.1, 0.2]
         }
-        
+
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_reg = search.best_estimator_
@@ -54,16 +54,22 @@ class ModelManager:
         return self.best_model_reg
 
     def train_classification(self, X, y):
-        """Entraîne et tune un modèle de classification."""
+        """Entraîne et tune un modèle de classification.
+
+        Utilise class_weight='balanced' pour gérer le déséquilibre des classes.
+        """
         logger.info("Entraînement du modèle de classification (Random Forest)...")
-        pipeline = Pipeline(steps=[('pre', self.preprocessor), ('model', RandomForestClassifier(random_state=42))])
-        
+        pipeline = Pipeline(steps=[
+            ('pre', self.preprocessor),
+            ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
+        ])
+
         param_dist = {
             'model__n_estimators': [100, 200],
             'model__max_depth': [5, 10, None],
             'model__min_samples_split': [2, 5]
         }
-        
+
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_clf = search.best_estimator_
@@ -86,6 +92,6 @@ class ModelManager:
             self.best_model_clf = dict_models['clf']
             logger.info("Modèles chargés avec succès.")
             return True
-        except:
-            logger.warning("Fichier de modèles introuvable.")
+        except (FileNotFoundError, KeyError, Exception) as e:
+            logger.warning(f"Impossible de charger les modèles depuis {path} : {e}")
             return False

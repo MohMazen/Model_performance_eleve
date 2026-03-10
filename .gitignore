@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environnements virtuels
+venv/
+.env/
+.venv/
+
+# Fichiers générés par le projet
+outputs/*.joblib
+outputs/*.log
+outputs/*.md
+*.joblib
+*.log
+rapport_analyse_scolaire.md
+analysis.log
+model_final.joblib
+
+# Ancien dossier Data (remplacé par data/)
+Data/
+
+# Jupyter
+.ipynb_checkpoints/

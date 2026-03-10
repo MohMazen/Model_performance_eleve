@@ -4,9 +4,32 @@ Utilitaires pour le chargement, le nettoyage et la génération de données.
 import pandas as pd
 import numpy as np
 import logging
-from config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
+from src.config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
 
 logger = logging.getLogger(__name__)
+
+
+def valider_schema(df, colonnes_requises):
+    """
+    Vérifie que les colonnes requises existent dans le DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Le DataFrame à valider.
+    colonnes_requises : list[str]
+        Liste des noms de colonnes attendus.
+
+    Raises
+    ------
+    ValueError
+        Si une ou plusieurs colonnes requises sont absentes.
+    """
+    manquantes = [col for col in colonnes_requises if col not in df.columns]
+    if manquantes:
+        raise ValueError(f"Colonnes manquantes dans le DataFrame : {manquantes}")
+    logger.info("Validation du schéma réussie.")
+
 
 def generer_donnees_synthetiques(n_eleves=300):
     """
@@ -14,7 +37,7 @@ def generer_donnees_synthetiques(n_eleves=300):
     """
     logger.info(f"Génération de {n_eleves} données synthétiques...")
     np.random.seed(42)  # Reproductibilité
-    
+
     data = {
         'age': np.random.normal(15.5, 1.2, n_eleves).clip(12, 19),
         'genre': np.random.choice(['M', 'F'], n_eleves),
@@ -51,9 +74,9 @@ def generer_donnees_synthetiques(n_eleves=300):
         'musique': np.random.choice(['Oui', 'Non'], n_eleves, p=[0.4, 0.6]),
         'lecture_loisir': np.random.gamma(1.5, 2, n_eleves).clip(0, 10)
     }
-    
+
     df = pd.DataFrame(data)
-    
+
     # Création des cibles réalistes
     for i in range(n_eleves):
         bonus = 0
@@ -61,14 +84,16 @@ def generer_donnees_synthetiques(n_eleves=300):
         bonus += df.loc[i, 'motivation'] * 0.2
         bonus -= df.loc[i, 'temps_ecrans'] * 0.3
         bonus -= df.loc[i, 'absences'] * 0.05
-        if df.loc[i, 'duree_trajet'] > 60: bonus -= 0.7
-        
+        if df.loc[i, 'duree_trajet'] > 60:
+            bonus -= 0.7
+
         df.loc[i, 'note_francais'] = np.clip(np.random.normal(13, 2) + bonus, 0, 20)
         df.loc[i, 'note_maths'] = np.clip(np.random.normal(12, 3) + bonus, 0, 20)
         df.loc[i, 'note_lecture'] = np.clip(np.random.normal(14, 2) + bonus, 0, 20)
-        
+
     df['note_moyenne'] = df[GRADE_COLUMNS].mean(axis=1)
     return df
+
 
 def charger_donnees(chemin):
     """
@@ -82,18 +107,20 @@ def charger_donnees(chemin):
         logger.error(f"Erreur de chargement de {chemin}: {e}")
         return None
 
+
 def nettoyer_donnees(df):
     """
     Nettoyage basique des données.
     """
-    if df is None: return None
+    if df is None:
+        return None
     df_clean = df.copy()
-    
+
     # Remplissage des valeurs manquantes
     for col in df_clean.select_dtypes(include=[np.number]).columns:
         df_clean[col] = df_clean[col].fillna(df_clean[col].median())
-        
-    for col in df_clean.select_dtypes(include=['object']).columns:
+
+    for col in df_clean.select_dtypes(include=['object', 'string']).columns:
         df_clean[col] = df_clean[col].fillna(df_clean[col].mode()[0])
-        
+
     return df_clean
