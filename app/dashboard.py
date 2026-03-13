@@ -148,7 +148,8 @@ elif page == PAGES[1]:
 
     with col2:
         if st.button("⚙️ Feature Engineering"):
-            df_base = _get("df_clean") or df
+            df_clean_tmp = _get("df_clean")
+            df_base = df_clean_tmp if df_clean_tmp is not None else df
             df_h = prenttoyer_horaires(df_base)
             df_feat = add_advanced_features(df_h)
             _set("df_feat", df_feat)
