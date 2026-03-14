@@ -223,7 +223,7 @@ elif page == PAGES[2]:
                     'precision': precision_score(yc_test, yc_pred, zero_division=0),
                     'recall': recall_score(yc_test, yc_pred, zero_division=0)
                 }
-                cm = confusion_matrix(yc_test, yc_pred)
+                cm = confusion_matrix(yc_test, yc_pred, labels=[0, 1])
 
                 _set("mm", mm)
                 _set("model_reg", model_reg)
