@@ -120,6 +120,39 @@ if page == PAGES[0]:
                 st.info("Aucune valeur manquante.")
             else:
                 st.dataframe(na_df, use_container_width=True)
+
+        st.markdown("---")
+        st.subheader("Visualisations des données")
+
+        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        cat_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
+
+        if num_cols:
+            st.markdown("#### Variables numériques")
+            for i in range(0, len(num_cols), 2):
+                cols = st.columns(2)
+                for j, col_name in enumerate(num_cols[i:i + 2]):
+                    with cols[j]:
+                        fig = px.histogram(
+                            df, x=col_name,
+                            title=f"Distribution de {col_name}",
+                            labels={col_name: col_name, "count": "Nombre"},
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+
+        if cat_cols:
+            st.markdown("#### Variables catégorielles")
+            for i in range(0, len(cat_cols), 2):
+                cols = st.columns(2)
+                for j, col_name in enumerate(cat_cols[i:i + 2]):
+                    with cols[j]:
+                        vc = df[col_name].value_counts().head(20).reset_index(name="count")
+                        fig = px.bar(
+                            vc, x=col_name, y="count",
+                            title=f"Distribution de {col_name}",
+                            labels={col_name: col_name, "count": "Nombre"},
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("Générez des données synthétiques ou chargez un fichier CSV pour commencer.")
 
