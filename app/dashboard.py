@@ -350,7 +350,13 @@ elif page == PAGES[3]:
         X_input = X_input[feature_columns]
 
         note_pred = model_reg.predict(X_input)[0]
-        proba_reussite = model_clf.predict_proba(X_input)[0][1] * 100
+        
+        classes = list(model_clf.classes_)
+        prob_preds = model_clf.predict_proba(X_input)[0]
+        if 1 in classes:
+            proba_reussite = prob_preds[classes.index(1)] * 100
+        else:
+            proba_reussite = 0.0
 
         st.markdown("---")
         col_r, col_c = st.columns(2)
