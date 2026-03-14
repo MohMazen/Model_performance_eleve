@@ -127,6 +127,10 @@ if page == PAGES[0]:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
 
+        cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms']
+        num_cols = [c for c in num_cols if str(c).lower() not in cols_a_exclure]
+        cat_cols = [c for c in cat_cols if str(c).lower() not in cols_a_exclure]
+
         if num_cols:
             st.markdown("#### Variables numériques")
             # Utiliser une palette de couleurs prédéfinie
