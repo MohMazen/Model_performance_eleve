@@ -105,14 +105,14 @@ python -m pytest tests/
 - `nombre_fratrie`: Nombre de frères et sœurs
 
 #### 🏫 Facteurs Scolaires
-- `classe`: Niveau (1ère ou Terminale)
+- `classe`: Niveau (4ème ou 3ème)
 - `taille_classe`: Nombre d'élèves par classe
 - `type_etablissement`: Public/Privé
 - `climat_scolaire`: Qualité de l'environnement scolaire
 - `soutien_scolaire`: Aide supplémentaire (Oui/Non)
 
 #### 📝 Notes
-- `note_francais`, `note_maths`, `note_lecture`: Notes par matière (calculées automatiquement dans la génération synthétique)
+- `note_francais`, `note_maths`, `note_histoire_geo`, `note_sciences`: Notes par matière (calculées automatiquement dans la génération synthétique)
 - `note_moyenne`: Moyenne générale (variable cible)
 
 ### Variables créées par le Feature Engineering

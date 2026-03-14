@@ -266,6 +266,13 @@ elif page == PAGES[2]:
                 mm = ModelManager()
                 mm.prepare_pipeline(X_train)
                 model_reg = mm.train_regression(X_train, yr_train)
+                
+                # Entraînement des modèles par matière
+                from src.config import GRADE_COLUMNS
+                for subject in GRADE_COLUMNS:
+                    if subject in df_feat.columns:
+                        mm.train_regression(X_train, df_feat.loc[X_train.index, subject], subject_name=subject)
+
                 model_clf = mm.train_classification(X_train, yc_train)
                 model_nn_reg = mm.train_nn_regression(X_train, yr_train)
                 model_nn_clf = mm.train_nn_classification(X_train, yc_train)
@@ -323,6 +330,25 @@ elif page == PAGES[2]:
 
     if metrics_reg is not None:
         st.markdown("---")
+        
+        with st.expander("ℹ️ Comprendre les métriques d'évaluation"):
+            col_inf1, col_inf2 = st.columns(2)
+            with col_inf1:
+                st.markdown("""
+                **Régression (Prédire la note) :**
+                - **R²** : Score entre $-\infty$ et 1. Plus il est proche de 1, plus le modèle explique bien les variations de notes.
+                - **MAE** : Écart moyen (en points) entre la note réelle et la note prédite.
+                - **RMSE** : Écart-type des erreurs de prédiction (pénalise les gros écarts).
+                """)
+            with col_inf2:
+                st.markdown("""
+                **Classification (Prédire la réussite) :**
+                - **Accuracy** : Pourcentage global de prédictions correctes.
+                - **F1-Score** : Équilibre entre précision et rappel (idéal pour les classes déséquilibrées).
+                - **Precision** : Fiabilité de l'annonce d'une réussite.
+                - **Recall** : Capacité à détecter tous les élèves en réussite.
+                """)
+
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -361,6 +387,12 @@ elif page == PAGES[2]:
             )
             fig_cm.update_layout(title="Matrice de confusion")
             st.plotly_chart(fig_cm, use_container_width=True)
+            st.info("""
+            **Comment lire cette matrice ?**
+            - **Diagonale (bleu foncé)** : Prédictions correctes (Réel = Prédit).
+            - **Prédit Réussite / Réel Échec** : Faux Positifs (le modèle s'est trompé en annonçant une réussite).
+            - **Prédit Échec / Réel Réussite** : Faux Négatifs (le modèle a manqué une réussite).
+            """)
 
         if st.button("💾 Sauvegarder les modèles"):
             mm = _get("mm")
@@ -382,90 +414,130 @@ elif page == PAGES[3]:
     model_clf = _get("model_clf")
     feature_columns = _get("feature_columns")
     df_feat = _get("df_feat")
+    mm = _get("mm")
 
     if model_reg is None or model_clf is None:
         st.warning("⚠️ Entraînez d'abord les modèles (Page 3).")
         st.stop()
 
-    st.subheader("Saisir les paramètres d'un élève")
+    tab_ind, tab_all = st.tabs(["👤 Prédiction Individuelle", "📋 Prédictions par Élève"])
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        heures_devoirs = st.slider("Heures de devoirs / jour", 0.5, 15.0, 4.0, 0.5)
-        motivation = st.slider("Motivation (1-10)", 1.0, 10.0, 7.0, 0.5)
-        heures_sommeil = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
-        stress = st.slider("Stress (1-10)", 1.0, 10.0, 5.0, 0.5)
+    with tab_ind:
+        st.subheader("Saisir les paramètres d'un élève")
 
-    with col2:
-        absences = st.number_input("Absences", 0, 30, 2)
-        temps_ecrans = st.slider("Temps d'écrans (h/j)", 0.0, 12.0, 3.0, 0.5)
-        confiance_soi = st.slider("Confiance en soi (1-10)", 1.0, 10.0, 6.0, 0.5)
-        perseverance = st.slider("Persévérance (1-10)", 1.0, 10.0, 7.0, 0.5)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            heures_devoirs = st.slider("Heures de devoirs / jour", 0.5, 15.0, 4.0, 0.5)
+            motivation = st.slider("Motivation (1-10)", 1.0, 10.0, 7.0, 0.5)
+            heures_sommeil = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
+            stress = st.slider("Stress (1-10)", 1.0, 10.0, 5.0, 0.5)
 
-    with col3:
-        genre = st.selectbox("Genre", ["M", "F"])
-        sport = st.selectbox("Pratique du sport", ["Oui", "Non"])
-        classe = st.selectbox("Classe", ["1ère", "Terminale"])
-        type_etab = st.selectbox("Type d'établissement", ["Public", "Privé"])
+        with col2:
+            absences = st.number_input("Absences", 0, 30, 2)
+            temps_ecrans = st.slider("Temps d'écrans (h/j)", 0.0, 12.0, 3.0, 0.5)
+            confiance_soi = st.slider("Confiance en soi (1-10)", 1.0, 10.0, 6.0, 0.5)
+            perseverance = st.slider("Persévérance (1-10)", 1.0, 10.0, 7.0, 0.5)
 
-    if st.button("🔮 Prédire"):
-        # Construire un DataFrame à partir d'un échantillon pour avoir toutes les colonnes
-        if df_feat is not None:
-            input_row = df_feat.iloc[0:1].copy()
-        else:
-            st.error("Les données doivent être prétraitées avant la prédiction.")
-            st.stop()
+        with col3:
+            genre = st.selectbox("Genre", ["M", "F"])
+            sport = st.selectbox("Pratique du sport", ["Oui", "Non"])
+            classe = st.selectbox("Classe", ["4ème", "3ème"])
+            type_etab = st.selectbox("Type d'établissement", ["Public", "Privé"])
 
-        input_row['heures_devoirs'] = heures_devoirs
-        input_row['motivation'] = motivation
-        input_row['heures_sommeil'] = heures_sommeil
-        input_row['stress'] = stress
-        input_row['absences'] = absences
-        input_row['temps_ecrans'] = temps_ecrans
-        input_row['confiance_soi'] = confiance_soi
-        input_row['perseverance'] = perseverance
-        input_row['genre'] = genre
-        input_row['sport'] = sport
-        input_row['classe'] = classe
-        input_row['type_etablissement'] = type_etab
-
-        # Recalculer les features dérivées
-        sport_num = 1 if sport == 'Oui' else 0
-        input_row['score_equilibre'] = (heures_sommeil + sport_num * 2) / (heures_devoirs + temps_ecrans + 1)
-        input_row['stress_absences'] = stress * absences
-        input_row['motivation_travail'] = motivation * heures_devoirs
-
-        # Conserver uniquement les colonnes attendues par le modèle
-        cols_drop = [c for c in COLS_TO_DROP if c in input_row.columns]
-        targets = [c for c in [TARGET_REG, TARGET_CLF] if c in input_row.columns]
-        X_input = input_row.drop(columns=cols_drop + targets)
-        X_input = X_input[feature_columns]
-
-        note_pred = model_reg.predict(X_input)[0]
-        
-        classes = list(model_clf.classes_)
-        prob_preds = model_clf.predict_proba(X_input)[0]
-        if 1 in classes:
-            proba_reussite = prob_preds[classes.index(1)] * 100
-        else:
-            proba_reussite = 0.0
-
-        st.markdown("---")
-        col_r, col_c = st.columns(2)
-        with col_r:
-            st.subheader("Note Moyenne Prédite")
-            if note_pred >= 14:
-                color = "🟢"
-            elif note_pred >= 10:
-                color = "🟠"
+        if st.button("🔮 Prédire"):
+            # Construire un DataFrame à partir d'un échantillon pour avoir toutes les colonnes
+            if df_feat is not None:
+                input_row = df_feat.iloc[0:1].copy()
             else:
-                color = "🔴"
-            st.metric(f"{color} Note prédite", f"{note_pred:.2f} / 20")
+                st.error("Les données doivent être prétraitées avant la prédiction.")
+                st.stop()
 
-        with col_c:
-            st.subheader("Probabilité de Réussite")
-            st.metric("Probabilité", f"{proba_reussite:.1f}%")
-            st.progress(int(proba_reussite))
+            input_row['heures_devoirs'] = heures_devoirs
+            input_row['motivation'] = motivation
+            input_row['heures_sommeil'] = heures_sommeil
+            input_row['stress'] = stress
+            input_row['absences'] = absences
+            input_row['temps_ecrans'] = temps_ecrans
+            input_row['confiance_soi'] = confiance_soi
+            input_row['perseverance'] = perseverance
+            input_row['genre'] = genre
+            input_row['sport'] = sport
+            input_row['classe'] = classe
+            input_row['type_etablissement'] = type_etab
+
+            # Recalculer les features dérivées
+            sport_num = 1 if sport == 'Oui' else 0
+            input_row['score_equilibre'] = (heures_sommeil + sport_num * 2) / (heures_devoirs + temps_ecrans + 1)
+            input_row['stress_absences'] = stress * absences
+            input_row['motivation_travail'] = motivation * heures_devoirs
+
+            # Conserver uniquement les colonnes attendues par le modèle
+            cols_drop = [c for c in COLS_TO_DROP if c in input_row.columns]
+            targets = [c for c in [TARGET_REG, TARGET_CLF] if c in input_row.columns]
+            X_input = input_row.drop(columns=cols_drop + targets)
+            X_input = X_input[feature_columns]
+
+            note_pred = model_reg.predict(X_input)[0]
+            
+            classes = list(model_clf.classes_)
+            prob_preds = model_clf.predict_proba(X_input)[0]
+            if 1 in classes:
+                proba_reussite = prob_preds[classes.index(1)] * 100
+            else:
+                proba_reussite = 0.0
+
+            st.markdown("---")
+            col_r, col_c = st.columns(2)
+            with col_r:
+                st.subheader("Note Moyenne Prédite")
+                color = "🟢" if note_pred >= 14 else "🟠" if note_pred >= 10 else "🔴"
+                st.metric(f"{color} Note prédite", f"{note_pred:.2f} / 20")
+
+            with col_c:
+                st.subheader("Probabilité de Réussite")
+                st.metric("Probabilité", f"{proba_reussite:.1f}%")
+                st.progress(int(proba_reussite))
+
+            # Prédictions par matière
+            if mm and mm.subject_models:
+                st.markdown("---")
+                st.subheader("Détails par matière")
+                cols_sub = st.columns(len(mm.subject_models))
+                for i, (sub_name, sub_model) in enumerate(mm.subject_models.items()):
+                    sub_pred = sub_model.predict(X_input)[0]
+                    with cols_sub[i]:
+                        st.metric(sub_name.replace('note_', '').capitalize(), f"{sub_pred:.2f} / 20")
+
+    with tab_all:
+        st.subheader("Prédictions pour tous les élèves")
+        if st.button("📊 Générer les prédictions globales"):
+            with st.spinner("Calcul en cours…"):
+                try:
+                    cols_drop = [c for c in COLS_TO_DROP if c in df_feat.columns]
+                    X_all = df_feat.drop(columns=cols_drop + [TARGET_REG, TARGET_CLF])
+                    X_all = X_all[feature_columns]
+
+                    df_preds = df_feat[['nom', 'prenom', TARGET_REG]].copy()
+                    df_preds['Note Prédite (Moy)'] = model_reg.predict(X_all)
+                    
+                    if mm and mm.subject_models:
+                        for sub_name, sub_model in mm.subject_models.items():
+                            col_label = f"Prédit_{sub_name.replace('note_', '')}"
+                            df_preds[col_label] = sub_model.predict(X_all)
+                    
+                    df_preds['Écart'] = df_preds['Note Prédite (Moy)'] - df_preds[TARGET_REG]
+                    
+                    st.dataframe(df_preds, use_container_width=True)
+                    
+                    csv = df_preds.to_csv(index=False, sep=';', encoding='utf-8-sig')
+                    st.download_button(
+                        label="⬇️ Télécharger les prédictions (CSV)",
+                        data=csv,
+                        file_name="predictions_eleves.csv",
+                        mime="text/csv"
+                    )
+                except Exception as e:
+                    st.error(f"Erreur lors de la génération : {e}")
 
 
 # ---------------------------------------------------------------------------

@@ -64,7 +64,7 @@ def generer_donnees_synthetiques(n_eleves=300):
         'duree_trajet': np.random.gamma(2, 15, n_eleves).clip(5, 120),
         'heure_coucher': [f"{np.random.randint(21, 24)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
         'heure_lever': [f"{np.random.randint(6, 9)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
-        'classe': np.random.choice(['1ère', 'Terminale'], n_eleves),
+        'classe': np.random.choice(['4ème', '3ème'], n_eleves),
         'education_physique': np.random.normal(12, 3, n_eleves).clip(0, 20),
         'matiere_enseignement_scientifique': np.random.normal(11, 4, n_eleves).clip(0, 20),
         'specialite1': np.random.normal(13, 3, n_eleves).clip(0, 20),
@@ -89,7 +89,8 @@ def generer_donnees_synthetiques(n_eleves=300):
 
         df.loc[i, 'note_francais'] = np.clip(np.random.normal(13, 2) + bonus, 0, 20)
         df.loc[i, 'note_maths'] = np.clip(np.random.normal(12, 3) + bonus, 0, 20)
-        df.loc[i, 'note_lecture'] = np.clip(np.random.normal(14, 2) + bonus, 0, 20)
+        df.loc[i, 'note_histoire_geo'] = np.clip(np.random.normal(13.5, 2.5) + bonus, 0, 20)
+        df.loc[i, 'note_sciences'] = np.clip(np.random.normal(12.5, 3) + bonus, 0, 20)
 
     df['note_moyenne'] = df[GRADE_COLUMNS].mean(axis=1)
     return df

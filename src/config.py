@@ -23,7 +23,7 @@ SEUIL_REUSSITE = 10
 ID_COLUMNS = ['nom', 'prenom']
 
 # Colonnes de notes (pour le calcul de la moyenne)
-GRADE_COLUMNS = ['note_francais', 'note_maths', 'note_lecture']
+GRADE_COLUMNS = ['note_francais', 'note_maths', 'note_histoire_geo', 'note_sciences']
 
 # Colonnes à exclure avant modélisation
-COLS_TO_DROP = ['nom', 'prenom', 'note_francais', 'note_maths', 'note_lecture', 'heure_coucher', 'heure_lever']
+COLS_TO_DROP = ['nom', 'prenom', 'note_francais', 'note_maths', 'note_histoire_geo', 'note_sciences', 'heure_coucher', 'heure_lever']

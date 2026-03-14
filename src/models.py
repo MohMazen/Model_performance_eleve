@@ -23,6 +23,7 @@ class ModelManager:
         self.best_model_clf = None
         self.best_model_nn_reg = None
         self.best_model_nn_clf = None
+        self.subject_models = {}
 
     def prepare_pipeline(self, X):
         """Définit le preprocesseur automatique."""
@@ -39,9 +40,13 @@ class ModelManager:
             ])
         return self.preprocessor
 
-    def train_regression(self, X, y):
-        """Entraîne et tune un modèle de régression."""
-        logger.info("Entraînement du modèle de régression (XGBoost)...")
+    def train_regression(self, X, y, subject_name=None):
+        """Entraîne et tune un modèle de régression (XGBoost)."""
+        if subject_name:
+            logger.info(f"Entraînement du modèle de régression pour {subject_name}...")
+        else:
+            logger.info("Entraînement du modèle de régression (XGBoost)...")
+
         pipeline = Pipeline(steps=[('pre', self.preprocessor), ('model', XGBRegressor(random_state=42))])
 
         param_dist = {
@@ -52,9 +57,14 @@ class ModelManager:
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
         search.fit(X, y)
-        self.best_model_reg = search.best_estimator_
-        logger.info(f"Meilleur score R2 régression : {search.best_score_:.4f}")
-        return self.best_model_reg
+        
+        if subject_name:
+            self.subject_models[subject_name] = search.best_estimator_
+            return self.subject_models[subject_name]
+        else:
+            self.best_model_reg = search.best_estimator_
+            logger.info(f"Meilleur score R2 régression : {search.best_score_:.4f}")
+            return self.best_model_reg
 
     def train_classification(self, X, y):
         """Entraîne et tune un modèle de classification.
@@ -125,7 +135,8 @@ class ModelManager:
             'reg': self.best_model_reg,
             'clf': self.best_model_clf,
             'nn_reg': self.best_model_nn_reg,
-            'nn_clf': self.best_model_nn_clf
+            'nn_clf': self.best_model_nn_clf,
+            'subject_models': self.subject_models
         }, path)
         logger.info(f"Modèles sauvegardés dans {path}")
 
@@ -137,6 +148,7 @@ class ModelManager:
             self.best_model_clf = dict_models['clf']
             self.best_model_nn_reg = dict_models.get('nn_reg')
             self.best_model_nn_clf = dict_models.get('nn_clf')
+            self.subject_models = dict_models.get('subject_models', {})
             logger.info("Modèles chargés avec succès.")
             return True
         except (FileNotFoundError, KeyError, Exception) as e:
