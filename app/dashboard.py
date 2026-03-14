@@ -135,8 +135,7 @@ if page == PAGES[0]:
                     with cols[j]:
                         fig = px.histogram(
                             df, x=col_name,
-                            color=col_name,
-                            color_continuous_scale='Viridis',
+                            color_discrete_sequence=[px.colors.sequential.Viridis[5]],
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
                         )
@@ -484,8 +483,7 @@ elif page == PAGES[5]:
         fig = px.histogram(
             df_feat,
             x='note_moyenne',
-            color='note_moyenne',
-            color_continuous_scale='Magma',
+            color_discrete_sequence=['#ff7f0e'],
             nbins=25,
             title="Distribution des notes moyennes",
             labels={'note_moyenne': 'Note moyenne / 20', 'count': 'Nombre d\'élèves'},
