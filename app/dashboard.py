@@ -105,12 +105,12 @@ if page == PAGES[0]:
     if df is not None:
         st.markdown("---")
         st.subheader("Aperçu des données")
-        st.dataframe(df.head(20), use_container_width=True)
+        st.dataframe(df.head(20), width='stretch')
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Statistiques descriptives")
-            st.dataframe(df.describe(), use_container_width=True)
+            st.dataframe(df.describe(), width='stretch')
         with col2:
             st.subheader("Valeurs manquantes")
             na_df = df.isnull().sum().rename("NaN").reset_index()
@@ -119,7 +119,7 @@ if page == PAGES[0]:
             if na_df.empty:
                 st.info("Aucune valeur manquante.")
             else:
-                st.dataframe(na_df, use_container_width=True)
+                st.dataframe(na_df, width='stretch')
 
         st.markdown("---")
         st.subheader("Visualisations des données")
@@ -152,7 +152,7 @@ if page == PAGES[0]:
                         )
                         # Ajoute une bordure blanche pour bien séparer les barres de l'histogramme
                         fig.update_traces(marker_line_width=1, marker_line_color="white")
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
 
         if cat_cols:
             st.markdown("#### Variables catégorielles")
@@ -168,7 +168,7 @@ if page == PAGES[0]:
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
     else:
         st.info("Générez des données synthétiques ou chargez un fichier CSV pour commencer.")
 
@@ -217,7 +217,7 @@ elif page == PAGES[1]:
                 na_apres = df_clean.isnull().sum().sum()
                 st.metric("Valeurs manquantes avant", na_avant)
                 st.metric("Valeurs manquantes après", na_apres)
-                st.dataframe(df_clean.head(10), use_container_width=True)
+                st.dataframe(df_clean.head(10), width='stretch')
             else:
                 st.info("Cliquez sur 'Nettoyer les données'.")
 
@@ -235,7 +235,7 @@ elif page == PAGES[1]:
                 - **`reussite`** : Variable cible binaire créée pour la classification (1 si $\ge$ 10, 0 sinon).
                 """)
 
-                st.dataframe(df_feat[new_cols].head(10), use_container_width=True)
+                st.dataframe(df_feat[new_cols].head(10), width='stretch')
             else:
                 st.info("Cliquez sur 'Feature Engineering'.")
 
@@ -386,7 +386,7 @@ elif page == PAGES[2]:
                 showscale=True
             )
             fig_cm.update_layout(title="Matrice de confusion")
-            st.plotly_chart(fig_cm, use_container_width=True)
+            st.plotly_chart(fig_cm, width='stretch')
             st.info("""
             **Comment lire cette matrice ?**
             - **Diagonale (bleu foncé)** : Prédictions correctes (Réel = Prédit).
@@ -527,7 +527,7 @@ elif page == PAGES[3]:
                     
                     df_preds['Écart'] = df_preds['Note Prédite (Moy)'] - df_preds[TARGET_REG]
                     
-                    st.dataframe(df_preds, use_container_width=True)
+                    st.dataframe(df_preds, width='stretch')
                     
                     csv = df_preds.to_csv(index=False, sep=';', encoding='utf-8-sig')
                     st.download_button(
@@ -568,7 +568,7 @@ elif page == PAGES[4]:
     shap_buf = _get("shap_buf")
     if shap_buf is not None:
         st.subheader("Importance des facteurs de réussite")
-        st.image(shap_buf, use_container_width=True)
+        st.image(shap_buf, width='stretch')
         st.caption(
             "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
             "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
@@ -621,4 +621,4 @@ elif page == PAGES[5]:
             labels={'note_moyenne': 'Note moyenne / 20', 'count': 'Nombre d\'élèves'},
         )
         fig.add_vline(x=10, line_dash="dash", line_color="red", annotation_text="Seuil réussite (10)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
