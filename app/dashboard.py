@@ -135,6 +135,8 @@ if page == PAGES[0]:
                     with cols[j]:
                         fig = px.histogram(
                             df, x=col_name,
+                            color=col_name,
+                            color_continuous_scale='Viridis',
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
                         )
@@ -149,6 +151,8 @@ if page == PAGES[0]:
                         vc = df[col_name].value_counts().head(20).reset_index(name="count")
                         fig = px.bar(
                             vc, x=col_name, y="count",
+                            color="count",
+                            color_continuous_scale='Plasma',
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
                         )
@@ -480,10 +484,11 @@ elif page == PAGES[5]:
         fig = px.histogram(
             df_feat,
             x='note_moyenne',
+            color='note_moyenne',
+            color_continuous_scale='Magma',
             nbins=25,
             title="Distribution des notes moyennes",
             labels={'note_moyenne': 'Note moyenne / 20', 'count': 'Nombre d\'élèves'},
-            color_discrete_sequence=['teal']
         )
         fig.add_vline(x=10, line_dash="dash", line_color="red", annotation_text="Seuil réussite (10)")
         st.plotly_chart(fig, use_container_width=True)
