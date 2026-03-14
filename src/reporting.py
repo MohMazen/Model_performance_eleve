@@ -35,7 +35,7 @@ def generer_visualisations(df, buf=None):
 
 
 def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE,
-                             metrics_nn_reg=None, metrics_nn_clf=None):
+                             metrics_nn_reg=None, metrics_nn_clf=None, model_name=None):
     """Génère le rapport final en Markdown.
 
     Parameters
@@ -50,6 +50,8 @@ def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE,
         Métriques du réseau de neurones en régression.
     metrics_nn_clf : dict, optional
         Métriques du réseau de neurones en classification.
+    model_name : str, optional
+        Nom personnalisé du modèle.
 
     Returns
     -------
@@ -68,7 +70,11 @@ def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE,
 - **Effectif** : {nb_eleves} élèves
 - **Moyenne Générale** : {moyenne_gen:.2f}/20
 - **Élèves sous le seuil (10/20)** : {nb_echec} ({nb_echec/nb_eleves*100:.1f}%)
+"""
+    if model_name:
+        contenu += f"- **Nom du modèle** : {model_name}\n"
 
+    contenu += f"""
 ## 2. PERFORMANCE DES MODÈLES
 ### Régression (Prédiction de la note)
 - **Modèle** : XGBoost Tuned

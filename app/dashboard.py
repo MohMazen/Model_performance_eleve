@@ -251,6 +251,13 @@ elif page == PAGES[2]:
         st.warning("⚠️ Effectuez d'abord le Preprocessing (Page 2).")
         st.stop()
 
+    # Saisie du nom du modèle
+    model_name = st.text_input("Nom du modèle (optionnel)", 
+                              value=_get("model_name", ""), 
+                              placeholder="Ex: XGBoost_v1",
+                              help="Ce nom apparaîtra sur les graphiques et dans le rapport.")
+    _set("model_name", model_name)
+
     if st.button("🚀 Entraîner les modèles"):
         with st.spinner("Entraînement en cours… (peut prendre quelques minutes)"):
             try:
@@ -351,21 +358,23 @@ elif page == PAGES[2]:
 
         col1, col2, col3 = st.columns(3)
 
+        model_suffix = f" ({model_name})" if model_name else ""
+
         with col1:
-            st.subheader("📈 Régression (XGBoost)")
+            st.subheader(f"📈 Régression{model_suffix}")
             st.metric("R²", f"{metrics_reg['r2']:.3f}")
             st.metric("MAE", f"{metrics_reg['mae']:.3f}")
             st.metric("RMSE", f"{metrics_reg['rmse']:.3f}")
 
         with col2:
-            st.subheader("🎯 Classification (Random Forest)")
+            st.subheader(f"🎯 Classification{model_suffix}")
             st.metric("Accuracy", f"{metrics_clf['accuracy']:.1f}%")
             st.metric("F1-Score", f"{metrics_clf['f1']:.3f}")
             st.metric("Precision", f"{metrics_clf['precision']:.3f}")
             st.metric("Recall", f"{metrics_clf['recall']:.3f}")
 
         with col3:
-            st.subheader("🧠 Réseau de Neurones")
+            st.subheader(f"🧠 Réseau de Neurones{model_suffix}")
             if metrics_nn_reg is not None:
                 st.markdown("**Régression (MLP)**")
                 st.metric("R²", f"{metrics_nn_reg['r2']:.3f}")
@@ -592,9 +601,11 @@ elif page == PAGES[5]:
         st.stop()
 
     if st.button("📄 Générer le rapport"):
+        model_name = _get("model_name")
         rapport = generer_rapport_markdown(df_feat, metrics_reg, metrics_clf, path=None,
                                            metrics_nn_reg=metrics_nn_reg,
-                                           metrics_nn_clf=metrics_nn_clf)
+                                           metrics_nn_clf=metrics_nn_clf,
+                                           model_name=model_name)
         _set("rapport_md", rapport)
         st.success("✅ Rapport généré.")
 
