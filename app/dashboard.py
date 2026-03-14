@@ -225,6 +225,16 @@ elif page == PAGES[1]:
             if df_feat is not None:
                 new_cols = [c for c in df_feat.columns if c not in df.columns]
                 st.write(f"**{len(new_cols)} nouvelles colonnes créées :** {', '.join(new_cols)}")
+                
+                st.markdown("""
+                **Signification des variables ajoutées :**
+                - **`score_equilibre`** : Ratio entre le repos/détente (sommeil, sport) et la charge (devoirs, écrans). Un score élevé indique un meilleur équilibre de vie.
+                - **`stress_absences`** : Produit entre le stress et les absences, soulignant un comportement potentiellement à risque.
+                - **`motivation_travail`** : Synergie entre la motivation et les heures de devoirs (indicateur d'engagement).
+                - **`heure_coucher_num` / `heure_lever_num`** : Conversion des horaires en heures décimales.
+                - **`reussite`** : Variable cible binaire créée pour la classification (1 si $\ge$ 10, 0 sinon).
+                """)
+
                 st.dataframe(df_feat[new_cols].head(10), use_container_width=True)
             else:
                 st.info("Cliquez sur 'Feature Engineering'.")
