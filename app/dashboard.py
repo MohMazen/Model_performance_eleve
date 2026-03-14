@@ -129,16 +129,25 @@ if page == PAGES[0]:
 
         if num_cols:
             st.markdown("#### Variables numériques")
+            # Utiliser une palette de couleurs prédéfinie
+            palette = px.colors.qualitative.Prism
+
             for i in range(0, len(num_cols), 2):
                 cols = st.columns(2)
                 for j, col_name in enumerate(num_cols[i:i + 2]):
+                    # Calculer l'index global pour choisir la couleur
+                    idx = i + j
+                    couleur = palette[idx % len(palette)]
+
                     with cols[j]:
                         fig = px.histogram(
                             df, x=col_name,
-                            color_discrete_sequence=[px.colors.sequential.Viridis[5]],
+                            color_discrete_sequence=[couleur],
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
                         )
+                        # Ajoute une bordure blanche pour bien séparer les barres de l'histogramme
+                        fig.update_traces(marker_line_width=1, marker_line_color="white")
                         st.plotly_chart(fig, use_container_width=True)
 
         if cat_cols:
