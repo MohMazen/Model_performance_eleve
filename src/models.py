@@ -6,6 +6,7 @@ import logging
 import joblib
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -20,6 +21,8 @@ class ModelManager:
         self.preprocessor = None
         self.best_model_reg = None
         self.best_model_clf = None
+        self.best_model_nn_reg = None
+        self.best_model_nn_clf = None
 
     def prepare_pipeline(self, X):
         """Définit le preprocesseur automatique."""
@@ -76,11 +79,53 @@ class ModelManager:
         logger.info(f"Meilleure accuracy classification : {search.best_score_:.4f}")
         return self.best_model_clf
 
+    def train_nn_regression(self, X, y):
+        """Entraîne et tune un réseau de neurones pour la régression."""
+        logger.info("Entraînement du modèle de régression (Réseau de Neurones)...")
+        pipeline = Pipeline(steps=[
+            ('pre', self.preprocessor),
+            ('model', MLPRegressor(random_state=42, max_iter=1000))
+        ])
+
+        param_dist = {
+            'model__hidden_layer_sizes': [(64, 32), (128, 64), (100,)],
+            'model__activation': ['relu', 'tanh'],
+            'model__learning_rate_init': [0.001, 0.01],
+        }
+
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search.fit(X, y)
+        self.best_model_nn_reg = search.best_estimator_
+        logger.info(f"Meilleur score R2 régression NN : {search.best_score_:.4f}")
+        return self.best_model_nn_reg
+
+    def train_nn_classification(self, X, y):
+        """Entraîne et tune un réseau de neurones pour la classification."""
+        logger.info("Entraînement du modèle de classification (Réseau de Neurones)...")
+        pipeline = Pipeline(steps=[
+            ('pre', self.preprocessor),
+            ('model', MLPClassifier(random_state=42, max_iter=1000))
+        ])
+
+        param_dist = {
+            'model__hidden_layer_sizes': [(64, 32), (128, 64), (100,)],
+            'model__activation': ['relu', 'tanh'],
+            'model__learning_rate_init': [0.001, 0.01],
+        }
+
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search.fit(X, y)
+        self.best_model_nn_clf = search.best_estimator_
+        logger.info(f"Meilleure accuracy classification NN : {search.best_score_:.4f}")
+        return self.best_model_nn_clf
+
     def save_models(self, path=MODEL_FILE):
         """Sauvegarde les modèles sur disque."""
         joblib.dump({
             'reg': self.best_model_reg,
-            'clf': self.best_model_clf
+            'clf': self.best_model_clf,
+            'nn_reg': self.best_model_nn_reg,
+            'nn_clf': self.best_model_nn_clf
         }, path)
         logger.info(f"Modèles sauvegardés dans {path}")
 
@@ -90,6 +135,8 @@ class ModelManager:
             dict_models = joblib.load(path)
             self.best_model_reg = dict_models['reg']
             self.best_model_clf = dict_models['clf']
+            self.best_model_nn_reg = dict_models.get('nn_reg')
+            self.best_model_nn_clf = dict_models.get('nn_clf')
             logger.info("Modèles chargés avec succès.")
             return True
         except (FileNotFoundError, KeyError, Exception) as e:

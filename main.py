@@ -60,10 +60,14 @@ def main():
 
     model_reg = mm.train_regression(X_train, y_reg_train)
     model_clf = mm.train_classification(X_train, y_clf_train)
+    model_nn_reg = mm.train_nn_regression(X_train, y_reg_train)
+    model_nn_clf = mm.train_nn_classification(X_train, y_clf_train)
 
     # Évaluation sur les données de TEST (jamais vues à l'entraînement)
     y_pred_reg = model_reg.predict(X_test)
     y_pred_clf = model_clf.predict(X_test)
+    y_pred_nn_reg = model_nn_reg.predict(X_test)
+    y_pred_nn_clf = model_nn_clf.predict(X_test)
 
     metrics_reg = {
         'r2': r2_score(y_reg_test, y_pred_reg),
@@ -76,9 +80,22 @@ def main():
         'precision': precision_score(y_clf_test, y_pred_clf, zero_division=0),
         'recall': recall_score(y_clf_test, y_pred_clf, zero_division=0)
     }
+    metrics_nn_reg = {
+        'r2': r2_score(y_reg_test, y_pred_nn_reg),
+        'mae': mean_absolute_error(y_reg_test, y_pred_nn_reg),
+        'rmse': np.sqrt(mean_squared_error(y_reg_test, y_pred_nn_reg))
+    }
+    metrics_nn_clf = {
+        'accuracy': accuracy_score(y_clf_test, y_pred_nn_clf) * 100,
+        'f1': f1_score(y_clf_test, y_pred_nn_clf, zero_division=0),
+        'precision': precision_score(y_clf_test, y_pred_nn_clf, zero_division=0),
+        'recall': recall_score(y_clf_test, y_pred_nn_clf, zero_division=0)
+    }
 
     logger.info(f"Métriques régression : R²={metrics_reg['r2']:.4f}, MAE={metrics_reg['mae']:.4f}")
     logger.info(f"Métriques classification : Accuracy={metrics_clf['accuracy']:.2f}%, F1={metrics_clf['f1']:.4f}")
+    logger.info(f"Métriques NN régression : R²={metrics_nn_reg['r2']:.4f}, MAE={metrics_nn_reg['mae']:.4f}")
+    logger.info(f"Métriques NN classification : Accuracy={metrics_nn_clf['accuracy']:.2f}%, F1={metrics_nn_clf['f1']:.4f}")
 
     # 6. Explicabilité
     sample_size = min(50, len(X_test))
@@ -86,7 +103,9 @@ def main():
 
     # 7. Sauvegarde et Rapport
     mm.save_models()
-    generer_rapport_markdown(df, metrics_reg, metrics_clf)
+    generer_rapport_markdown(df, metrics_reg, metrics_clf,
+                             metrics_nn_reg=metrics_nn_reg,
+                             metrics_nn_clf=metrics_nn_clf)
 
     logger.info("Workflow terminé avec succès.")
 

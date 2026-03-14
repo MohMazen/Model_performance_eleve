@@ -34,7 +34,8 @@ def generer_visualisations(df, buf=None):
     plt.close(fig)
 
 
-def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE):
+def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE,
+                             metrics_nn_reg=None, metrics_nn_clf=None):
     """Génère le rapport final en Markdown.
 
     Parameters
@@ -45,6 +46,10 @@ def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE):
     path : str or None
         Chemin de sauvegarde. Si None, le rapport n'est pas écrit sur disque
         (utile pour le dashboard Streamlit).
+    metrics_nn_reg : dict, optional
+        Métriques du réseau de neurones en régression.
+    metrics_nn_clf : dict, optional
+        Métriques du réseau de neurones en classification.
 
     Returns
     -------
@@ -77,7 +82,28 @@ def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE):
 - **F1-Score** : {metrics_clf.get('f1', 'N/A'):.3f}
 - **Precision** : {metrics_clf.get('precision', 'N/A'):.3f}
 - **Recall** : {metrics_clf.get('recall', 'N/A'):.3f}
+"""
 
+    if metrics_nn_reg is not None:
+        contenu += f"""
+### Réseau de Neurones – Régression
+- **Modèle** : MLPRegressor Tuned
+- **R² Score** : {metrics_nn_reg.get('r2', 'N/A'):.3f}
+- **MAE** : {metrics_nn_reg.get('mae', 'N/A'):.3f}
+- **RMSE** : {metrics_nn_reg.get('rmse', 'N/A'):.3f}
+"""
+
+    if metrics_nn_clf is not None:
+        contenu += f"""
+### Réseau de Neurones – Classification
+- **Modèle** : MLPClassifier Tuned
+- **Accuracy** : {metrics_nn_clf.get('accuracy', 'N/A'):.1f}%
+- **F1-Score** : {metrics_nn_clf.get('f1', 'N/A'):.3f}
+- **Precision** : {metrics_nn_clf.get('precision', 'N/A'):.3f}
+- **Recall** : {metrics_nn_clf.get('recall', 'N/A'):.3f}
+"""
+
+    contenu += """
 ## 3. ANALYSE DE L'EXPLICABILITÉ (SHAP)
 *L'analyse SHAP a identifié les facteurs les plus influents sur la performance individuelle.*
 - *Voir graphiques générés pour le détail des impacts.*
