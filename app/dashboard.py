@@ -253,9 +253,13 @@ elif page == PAGES[2]:
                 mm.prepare_pipeline(X_train)
                 model_reg = mm.train_regression(X_train, yr_train)
                 model_clf = mm.train_classification(X_train, yc_train)
+                model_nn_reg = mm.train_nn_regression(X_train, yr_train)
+                model_nn_clf = mm.train_nn_classification(X_train, yc_train)
 
                 yr_pred = model_reg.predict(X_test)
                 yc_pred = model_clf.predict(X_test)
+                yr_nn_pred = model_nn_reg.predict(X_test)
+                yc_nn_pred = model_nn_clf.predict(X_test)
 
                 metrics_reg = {
                     'r2': r2_score(yr_test, yr_pred),
@@ -268,14 +272,29 @@ elif page == PAGES[2]:
                     'precision': precision_score(yc_test, yc_pred, zero_division=0),
                     'recall': recall_score(yc_test, yc_pred, zero_division=0)
                 }
+                metrics_nn_reg = {
+                    'r2': r2_score(yr_test, yr_nn_pred),
+                    'mae': mean_absolute_error(yr_test, yr_nn_pred),
+                    'rmse': np.sqrt(mean_squared_error(yr_test, yr_nn_pred))
+                }
+                metrics_nn_clf = {
+                    'accuracy': accuracy_score(yc_test, yc_nn_pred) * 100,
+                    'f1': f1_score(yc_test, yc_nn_pred, zero_division=0),
+                    'precision': precision_score(yc_test, yc_nn_pred, zero_division=0),
+                    'recall': recall_score(yc_test, yc_nn_pred, zero_division=0)
+                }
                 cm = confusion_matrix(yc_test, yc_pred, labels=[0, 1])
 
                 _set("mm", mm)
                 _set("model_reg", model_reg)
                 _set("model_clf", model_clf)
+                _set("model_nn_reg", model_nn_reg)
+                _set("model_nn_clf", model_nn_clf)
                 _set("X_test", X_test)
                 _set("metrics_reg", metrics_reg)
                 _set("metrics_clf", metrics_clf)
+                _set("metrics_nn_reg", metrics_nn_reg)
+                _set("metrics_nn_clf", metrics_nn_clf)
                 _set("confusion_matrix", cm)
                 _set("feature_columns", list(X_train.columns))
                 st.success("✅ Modèles entraînés avec succès.")
@@ -284,11 +303,13 @@ elif page == PAGES[2]:
 
     metrics_reg = _get("metrics_reg")
     metrics_clf = _get("metrics_clf")
+    metrics_nn_reg = _get("metrics_nn_reg")
+    metrics_nn_clf = _get("metrics_nn_clf")
     cm = _get("confusion_matrix")
 
     if metrics_reg is not None:
         st.markdown("---")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.subheader("📈 Régression (XGBoost)")
@@ -302,6 +323,18 @@ elif page == PAGES[2]:
             st.metric("F1-Score", f"{metrics_clf['f1']:.3f}")
             st.metric("Precision", f"{metrics_clf['precision']:.3f}")
             st.metric("Recall", f"{metrics_clf['recall']:.3f}")
+
+        with col3:
+            st.subheader("🧠 Réseau de Neurones")
+            if metrics_nn_reg is not None:
+                st.markdown("**Régression (MLP)**")
+                st.metric("R²", f"{metrics_nn_reg['r2']:.3f}")
+                st.metric("MAE", f"{metrics_nn_reg['mae']:.3f}")
+                st.metric("RMSE", f"{metrics_nn_reg['rmse']:.3f}")
+            if metrics_nn_clf is not None:
+                st.markdown("**Classification (MLP)**")
+                st.metric("Accuracy ", f"{metrics_nn_clf['accuracy']:.1f}%")
+                st.metric("F1-Score ", f"{metrics_nn_clf['f1']:.3f}")
 
         if cm is not None:
             st.subheader("Matrice de confusion")
@@ -465,13 +498,17 @@ elif page == PAGES[5]:
     df_feat = _get("df_feat")
     metrics_reg = _get("metrics_reg")
     metrics_clf = _get("metrics_clf")
+    metrics_nn_reg = _get("metrics_nn_reg")
+    metrics_nn_clf = _get("metrics_nn_clf")
 
     if df_feat is None or metrics_reg is None:
         st.warning("⚠️ Entraînez d'abord les modèles (Page 3).")
         st.stop()
 
     if st.button("📄 Générer le rapport"):
-        rapport = generer_rapport_markdown(df_feat, metrics_reg, metrics_clf, path=None)
+        rapport = generer_rapport_markdown(df_feat, metrics_reg, metrics_clf, path=None,
+                                           metrics_nn_reg=metrics_nn_reg,
+                                           metrics_nn_clf=metrics_nn_clf)
         _set("rapport_md", rapport)
         st.success("✅ Rapport généré.")
 

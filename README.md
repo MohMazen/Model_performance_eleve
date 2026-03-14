@@ -27,7 +27,7 @@ Model_performance_eleve/
 │   ├── config.py               # Constantes et chemins
 │   ├── data_utils.py           # Chargement, nettoyage, génération de données
 │   ├── features.py             # Feature engineering
-│   ├── models.py               # Entraînement ML (XGBoost, Random Forest)
+│   ├── models.py               # Entraînement ML (XGBoost, Random Forest, Réseau de Neurones)
 │   ├── explainability.py       # Analyse SHAP
 │   └── reporting.py            # Génération de rapports et visualisations
 ├── app/
@@ -128,6 +128,8 @@ python -m pytest tests/
 |-------|-----------|-----------------|
 | Régression (note) | XGBoost | RandomizedSearchCV, 3-fold CV |
 | Classification (réussite) | Random Forest | `class_weight='balanced'` pour gérer le déséquilibre |
+| Régression (note) | Réseau de Neurones (MLPRegressor) | RandomizedSearchCV, 3-fold CV |
+| Classification (réussite) | Réseau de Neurones (MLPClassifier) | RandomizedSearchCV, 3-fold CV |
 
 ## 📈 Métriques d'Évaluation
 
