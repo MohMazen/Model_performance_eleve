@@ -6,11 +6,14 @@ import io
 import os
 import sys
 
+import logging
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.figure_factory as ff
 import streamlit as st
+
+logger = logging.getLogger(__name__)
 
 # Permettre l'import depuis la racine du projet
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
