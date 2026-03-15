@@ -303,11 +303,15 @@ elif page == PAGES[2]:
                 model_clf = mm.train_classification(X_train, yc_train)
                 model_nn_reg = mm.train_nn_regression(X_train, yr_train)
                 model_nn_clf = mm.train_nn_classification(X_train, yc_train)
+                model_svm_reg = mm.train_svm_regression(X_train, yr_train)
+                model_svm_clf = mm.train_svm_classification(X_train, yc_train)
 
                 yr_pred = model_reg.predict(X_test)
                 yc_pred = model_clf.predict(X_test)
                 yr_nn_pred = model_nn_reg.predict(X_test)
                 yc_nn_pred = model_nn_clf.predict(X_test)
+                yr_svm_pred = model_svm_reg.predict(X_test)
+                yc_svm_pred = model_svm_clf.predict(X_test)
 
                 metrics_reg = {
                     'r2': r2_score(yr_test, yr_pred),
@@ -331,6 +335,17 @@ elif page == PAGES[2]:
                     'precision': precision_score(yc_test, yc_nn_pred, zero_division=0),
                     'recall': recall_score(yc_test, yc_nn_pred, zero_division=0)
                 }
+                metrics_svm_reg = {
+                    'r2': r2_score(yr_test, yr_svm_pred),
+                    'mae': mean_absolute_error(yr_test, yr_svm_pred),
+                    'rmse': np.sqrt(mean_squared_error(yr_test, yr_svm_pred))
+                }
+                metrics_svm_clf = {
+                    'accuracy': accuracy_score(yc_test, yc_svm_pred) * 100,
+                    'f1': f1_score(yc_test, yc_svm_pred, zero_division=0),
+                    'precision': precision_score(yc_test, yc_svm_pred, zero_division=0),
+                    'recall': recall_score(yc_test, yc_svm_pred, zero_division=0)
+                }
                 cm = confusion_matrix(yc_test, yc_pred, labels=[0, 1])
 
                 _set("mm", mm)
@@ -338,28 +353,38 @@ elif page == PAGES[2]:
                 _set("model_clf", model_clf)
                 _set("model_nn_reg", model_nn_reg)
                 _set("model_nn_clf", model_nn_clf)
+                _set("model_svm_reg", model_svm_reg)
+                _set("model_svm_clf", model_svm_clf)
                 _set("X_test", X_test)
                 _set("metrics_reg", metrics_reg)
                 _set("metrics_clf", metrics_clf)
                 _set("metrics_nn_reg", metrics_nn_reg)
                 _set("metrics_nn_clf", metrics_nn_clf)
+                _set("metrics_svm_reg", metrics_svm_reg)
+                _set("metrics_svm_clf", metrics_svm_clf)
                 _set("confusion_matrix", cm)
                 _set("feature_columns", list(X_train.columns))
 
                 # Sélection du meilleur modèle global
-                if metrics_nn_reg['r2'] > metrics_reg['r2']:
-                    mm.best_overall_reg = model_nn_reg
-                    _set("best_reg_type", "Réseau de Neurones")
-                else:
-                    mm.best_overall_reg = model_reg
-                    _set("best_reg_type", "XGBoost")
+                # Régression
+                best_reg_config = {"score": metrics_reg['r2'], "model": model_reg, "type": "XGBoost"}
+                if metrics_nn_reg['r2'] > best_reg_config["score"]:
+                    best_reg_config = {"score": metrics_nn_reg['r2'], "model": model_nn_reg, "type": "Réseau de Neurones"}
+                if metrics_svm_reg['r2'] > best_reg_config["score"]:
+                    best_reg_config = {"score": metrics_svm_reg['r2'], "model": model_svm_reg, "type": "SVM"}
+                
+                mm.best_overall_reg = best_reg_config["model"]
+                _set("best_reg_type", best_reg_config["type"])
 
-                if metrics_nn_clf['accuracy'] > metrics_clf['accuracy']:
-                    mm.best_overall_clf = model_nn_clf
-                    _set("best_clf_type", "Réseau de Neurones")
-                else:
-                    mm.best_overall_clf = model_clf
-                    _set("best_clf_type", "Random Forest")
+                # Classification
+                best_clf_config = {"score": metrics_clf['accuracy'], "model": model_clf, "type": "Random Forest"}
+                if metrics_nn_clf['accuracy'] > best_clf_config["score"]:
+                    best_clf_config = {"score": metrics_nn_clf['accuracy'], "model": model_nn_clf, "type": "Réseau de Neurones"}
+                if metrics_svm_clf['accuracy'] > best_clf_config["score"]:
+                    best_clf_config = {"score": metrics_svm_clf['accuracy'], "model": model_svm_clf, "type": "SVM"}
+
+                mm.best_overall_clf = best_clf_config["model"]
+                _set("best_clf_type", best_clf_config["type"])
                 
                 # Mettre à jour les modèles actifs avec les meilleurs
                 _set("model_reg", mm.best_overall_reg)
@@ -373,6 +398,8 @@ elif page == PAGES[2]:
     metrics_clf = _get("metrics_clf")
     metrics_nn_reg = _get("metrics_nn_reg")
     metrics_nn_clf = _get("metrics_nn_clf")
+    metrics_svm_reg = _get("metrics_svm_reg")
+    metrics_svm_clf = _get("metrics_svm_clf")
     cm = _get("confusion_matrix")
 
     if metrics_reg is not None:
@@ -396,7 +423,7 @@ elif page == PAGES[2]:
                 - **Recall** : Capacité à détecter tous les élèves en réussite.
                 """)
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         model_suffix = f" ({model_name})" if model_name else ""
 
@@ -424,6 +451,18 @@ elif page == PAGES[2]:
                 st.markdown("**Classification (MLP)**")
                 st.metric("Accuracy ", f"{metrics_nn_clf['accuracy']:.1f}%")
                 st.metric("F1-Score ", f"{metrics_nn_clf['f1']:.3f}")
+
+        with col4:
+            st.subheader(f"🛡️ SVM{model_suffix}")
+            if metrics_svm_reg is not None:
+                st.markdown("**Régression (SVR)**")
+                st.metric("R² ", f"{metrics_svm_reg['r2']:.3f}")
+                st.metric("MAE ", f"{metrics_svm_reg['mae']:.3f}")
+                st.metric("RMSE ", f"{metrics_svm_reg['rmse']:.3f}")
+            if metrics_svm_clf is not None:
+                st.markdown("**Classification (SVC)**")
+                st.metric("Accuracy  ", f"{metrics_svm_clf['accuracy']:.1f}%")
+                st.metric("F1-Score  ", f"{metrics_svm_clf['f1']:.3f}")
 
         if cm is not None:
             st.subheader("Matrice de confusion")
