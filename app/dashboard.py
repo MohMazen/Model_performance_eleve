@@ -160,7 +160,13 @@ if page == PAGES[0]:
                 cols = st.columns(2)
                 for j, col_name in enumerate(cat_cols[i:i + 2]):
                     with cols[j]:
-                        vc = df[col_name].value_counts().head(20).reset_index(name="count")
+                        vc = df[col_name].value_counts().reset_index(name="count")
+                        # Trier par heure si c'est une distribution horaire
+                        if col_name in ['heure_lever', 'heure_coucher']:
+                            vc = vc.sort_values(by=col_name)
+                        else:
+                            vc = vc.sort_values(by="count", ascending=False).head(20)
+                            
                         fig = px.bar(
                             vc, x=col_name, y="count",
                             color="count",
