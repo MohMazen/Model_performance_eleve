@@ -62,8 +62,14 @@ Le dashboard propose 6 pages :
 2. **🔧 Preprocessing** – Nettoyage et feature engineering
 3. **🤖 Modélisation** – Entraîner et évaluer les modèles ML
 4. **🔮 Prédictions** – Simuler la note d'un élève
-5. **📊 Explicabilité (SHAP)** – Comprendre les décisions du modèle
-6. **📝 Rapport** – Générer et télécharger le rapport Markdown
+6. **📊 Explicabilité (SHAP)** – Comprendre les décisions du modèle
+7. **📝 Rapport** – Générer et télécharger le rapport Markdown
+
+### Nouveautés v2.1
+- **Multi-Output Regression** : Prédiction simultanée de la moyenne et des notes par matière (Français, Maths, Histoire-Géo, Sciences).
+- **📋 Prédictions par Élève** : Nouvel onglet permettant de visualiser et télécharger (CSV) les prédictions pour l'ensemble des élèves.
+- **Gestion Avancée des Modèles** : Possibilité de nommer, sauvegarder et charger différents fichiers `.joblib`.
+- **Aide au Diagnostic** : Explications intégrées pour les métriques d'évaluation et la matrice de confusion.
 
 ### Lancer l'analyse en ligne de commande
 ```bash
@@ -164,4 +170,4 @@ Pour assurer une compatibilité optimale entre le questionnaire HTML et l'analys
 Ce projet est développé pour des fins éducatives et de recherche.
 
 ---
-*Système d'Analyse Scolaire v2.0*
+*Système d'Analyse Scolaire v2.1*
