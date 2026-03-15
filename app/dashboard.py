@@ -21,7 +21,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 
-from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG
+from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE
 from src.data_utils import charger_donnees, generer_donnees_synthetiques, nettoyer_donnees, valider_schema
 from src.explainability import generate_shap_analysis
 from src.features import add_advanced_features, prenttoyer_horaires
@@ -406,9 +406,12 @@ elif page == PAGES[2]:
         if st.button("💾 Sauvegarder les modèles"):
             mm = _get("mm")
             if mm:
-                os.makedirs("outputs", exist_ok=True)
-                mm.save_models()
-                st.success("✅ Modèles sauvegardés dans outputs/model_final.joblib.")
+                save_path = st.text_input("Chemin de sauvegarde", value=MODEL_FILE)
+                dir_name = os.path.dirname(save_path)
+                if dir_name:
+                    os.makedirs(dir_name, exist_ok=True)
+                mm.save_models(path=save_path)
+                st.success(f"✅ Modèles sauvegardés dans {save_path}.")
             else:
                 st.error("Aucun modèle disponible.")
 
@@ -426,7 +429,43 @@ elif page == PAGES[3]:
     mm = _get("mm")
 
     if model_reg is None or model_clf is None:
-        st.warning("⚠️ Entraînez d'abord les modèles (Page 3).")
+        st.warning("⚠️ Aucun modèle n'est chargé en mémoire. Veuillez en entraîner un (Page 3) ou en charger un ci-dessous.")
+        
+    st.markdown("---")
+    st.subheader("📁 Charger un modèle existant")
+    
+    # Lister les fichiers .joblib dans outputs/
+    output_dir = "outputs"
+    os.makedirs(output_dir, exist_ok=True)
+    available_models = [f for f in os.listdir(output_dir) if f.endswith(".joblib")]
+    
+    col_sel, col_btn = st.columns([3, 1])
+    with col_sel:
+        selected_model_file = st.selectbox("Sélectionnez un modèle", available_models if available_models else ["Aucun modèle trouvé"])
+    
+    with col_btn:
+        if st.button("🔌 Charger") and available_models:
+            with st.spinner("Chargement..."):
+                try:
+                    full_path = os.path.join(output_dir, selected_model_file)
+                    new_mm = ModelManager()
+                    if new_mm.load_models(path=full_path):
+                        _set("mm", new_mm)
+                        _set("model_reg", new_mm.best_model_reg)
+                        _set("model_clf", new_mm.best_model_clf)
+                        _set("model_nn_reg", new_mm.best_model_nn_reg)
+                        _set("model_nn_clf", new_mm.best_model_nn_clf)
+                        # On suppose que les features sont les mêmes que celles du pipeline
+                        # Si besoin de stocker feature_columns dans le joblib, il faudrait modifier ModelManager.save_models
+                        # Pour l'instant on réutilise ce qu'il y a en session_state si présent
+                        st.success(f"✅ Modèle {selected_model_file} chargé.")
+                        st.rerun()
+                    else:
+                        st.error("Échec du chargement.")
+                except Exception as e:
+                    st.error(f"Erreur : {e}")
+
+    if _get("model_reg") is None:
         st.stop()
 
     tab_ind, tab_all = st.tabs(["👤 Prédiction Individuelle", "📋 Prédictions par Élève"])
