@@ -395,6 +395,28 @@ elif page == PAGES[2]:
                 _set("model_reg", mm.best_overall_reg)
                 _set("model_clf", mm.best_overall_clf)
 
+                # Extraction des variables sélectionnées (pour affichage)
+                # On récupère le support du sélecteur du meilleur modèle de régression
+                try:
+                    pipeline = mm.best_overall_reg
+                    preprocessor = pipeline.named_steps['pre']
+                    selector = pipeline.named_steps['select']
+                    
+                    # Noms des colonnes après preprocessing
+                    cat_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
+                    num_names = preprocessor.transformers_[0][2]
+                    all_names = list(num_names) + list(cat_names)
+                    
+                    # Filtrage par le sélecteur
+                    selected_mask = selector.get_support()
+                    selected_features = [name for name, selected in zip(all_names, selected_mask) if selected]
+                    excluded_features = [name for name, selected in zip(all_names, selected_mask) if not selected]
+                    
+                    _set("selected_features", selected_features)
+                    _set("excluded_features", excluded_features)
+                except Exception as e:
+                    logger.warning(f"Impossible d'extraire les variables sélectionnées : {e}")
+
                 st.success(f"✅ Modèles entraînés avec succès. Meilleurs : { _get('best_reg_type') } (Rég) et { _get('best_clf_type') } (Clf).")
             except Exception as e:
                 st.error(f"Erreur lors de l'entraînement : {e}")
@@ -427,6 +449,27 @@ elif page == PAGES[2]:
                 - **Precision** : Fiabilité de l'annonce d'une réussite.
                 - **Recall** : Capacité à détecter tous les élèves en réussite.
                 """)
+
+        # Affichage des variables sélectionnées par l'IA
+        selected_features = _get("selected_features")
+        excluded_features = _get("excluded_features")
+        if selected_features:
+            with st.expander("🔍 Sélection automatique des variables (Feature Selection)"):
+                st.write(f"L'IA a automatiquement filtré les données pour ne garder que les facteurs ayant un impact réel.")
+                st.write(f"**{len(selected_features)} variables conservées.**")
+                
+                col_feat1, col_feat2 = st.columns(2)
+                with col_feat1:
+                    st.success("**✅ Variables sélectionnées :**")
+                    # Afficher par petits groupes pour la lisibilité
+                    st.write(", ".join(selected_features[:30]) + ("..." if len(selected_features) > 30 else ""))
+                
+                with col_feat2:
+                    if excluded_features:
+                        st.error("**❌ Variables exclues (bruit/non-corrélatives) :**")
+                        st.write(", ".join(excluded_features[:30]) + ("..." if len(excluded_features) > 30 else ""))
+                    else:
+                        st.info("Toutes les variables ont été jugées pertinentes.")
 
         col1, col2, col3, col4 = st.columns(4)
 

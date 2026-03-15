@@ -5,7 +5,8 @@ import numpy as np
 import logging
 import joblib
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -52,7 +53,13 @@ class ModelManager:
         else:
             logger.info("Entraînement du modèle de régression (XGBoost)...")
 
-        pipeline = Pipeline(steps=[('pre', self.preprocessor), ('model', XGBRegressor(random_state=42))])
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+        
+        pipeline = Pipeline(steps=[
+            ('pre', self.preprocessor), 
+            ('select', selector),
+            ('model', XGBRegressor(random_state=42))
+        ])
 
         param_dist = {
             'model__n_estimators': [50, 100, 200],
@@ -77,8 +84,11 @@ class ModelManager:
         Utilise class_weight='balanced' pour gérer le déséquilibre des classes.
         """
         logger.info("Entraînement du modèle de classification (Random Forest)...")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
+            ('select', selector),
             ('model', RandomForestClassifier(random_state=42, class_weight='balanced'))
         ])
 
@@ -97,8 +107,11 @@ class ModelManager:
     def train_nn_regression(self, X, y):
         """Entraîne et tune un réseau de neurones pour la régression."""
         logger.info("Entraînement du modèle de régression (Réseau de Neurones)...")
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
+            ('select', selector),
             ('model', MLPRegressor(random_state=42, max_iter=1000))
         ])
 
@@ -117,8 +130,11 @@ class ModelManager:
     def train_nn_classification(self, X, y):
         """Entraîne et tune un réseau de neurones pour la classification."""
         logger.info("Entraînement du modèle de classification (Réseau de Neurones)...")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
+            ('select', selector),
             ('model', MLPClassifier(random_state=42, max_iter=1000))
         ])
 
@@ -137,8 +153,11 @@ class ModelManager:
     def train_svm_regression(self, X, y):
         """Entraîne un modèle SVR (Support Vector Regression)."""
         logger.info("Entraînement du modèle de régression (SVM)...")
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
+            ('select', selector),
             ('model', SVR())
         ])
 
@@ -157,8 +176,11 @@ class ModelManager:
     def train_svm_classification(self, X, y):
         """Entraîne un modèle SVC (Support Vector Classification)."""
         logger.info("Entraînement du modèle de classification (SVM)...")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
+            ('select', selector),
             ('model', SVC(probability=True, random_state=42))
         ])
 
