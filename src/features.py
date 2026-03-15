@@ -16,9 +16,7 @@ def add_advanced_features(df):
     logger.info("Ajout des features avancées...")
     df_feat = df.copy()
 
-    # 1. Score d'Équilibre Vie (Sommeil + Sport vs Devoirs + Écran)
-    # On utilise 'Heures_sommeil', 'Heures_etude_soir', 'Heures_jeux_video', etc.
-    sport_num = (df_feat['Activite_sportive'] == 'oui').astype(int)
+    sport_num = (df_feat['Activite_sportive'] == 'oui').apply(lambda x: 1 if x else 0)
     ecrans = df_feat[['Heures_jeux_video', 'Heures_reseaux_sociaux', 'Heures_streaming']].sum(axis=1)
     
     df_feat['score_equilibre'] = (df_feat['Heures_sommeil'] + sport_num * 2) / (df_feat['Heures_etude_soir'] + ecrans + 1)

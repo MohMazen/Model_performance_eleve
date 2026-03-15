@@ -141,9 +141,9 @@ if page == PAGES[0]:
         num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
 
-        cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms']
-        num_cols = [c for c in num_cols if str(c).lower() not in cols_a_exclure]
-        cat_cols = [c for c in cat_cols if str(c).lower() not in cols_a_exclure]
+        cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms', 'Nom', 'Prenom', 'Adresse']
+        num_cols = [c for c in num_cols if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
+        cat_cols = [c for c in cat_cols if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
 
         if num_cols:
             st.markdown("#### Variables numériques")
@@ -176,7 +176,7 @@ if page == PAGES[0]:
                     with cols[j]:
                         vc = df[col_name].value_counts().reset_index(name="count")
                         # Trier par heure si c'est une distribution horaire
-                        if col_name in ['heure_lever', 'heure_coucher']:
+                        if col_name in ['Heure_lever', 'Heure_coucher', 'heure_lever', 'heure_coucher']:
                             vc = vc.sort_values(by=col_name)
                         else:
                             vc = vc.sort_values(by="count", ascending=False).head(20)
@@ -569,21 +569,20 @@ elif page == PAGES[3]:
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            heures_devoirs = st.slider("Heures de devoirs / jour", 0.5, 15.0, 4.0, 0.5)
-            motivation = st.slider("Motivation (1-10)", 1.0, 10.0, 7.0, 0.5)
+            heures_etude = st.slider("Heures d'étude / soir", 0.0, 10.0, 3.0, 0.5)
+            interet_maths = st.slider("Intérêt pour les Maths (0-10)", 0, 10, 7)
             heures_sommeil = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
-            stress = st.slider("Stress (1-10)", 1.0, 10.0, 5.0, 0.5)
+            stress_1 = st.slider("Niveau de stress 1 (0-4)", 0, 4, 1)
 
         with col2:
-            absences = st.number_input("Absences", 0, 30, 2)
-            temps_ecrans = st.slider("Temps d'écrans (h/j)", 0.0, 12.0, 3.0, 0.5)
-            confiance_soi = st.slider("Confiance en soi (1-10)", 1.0, 10.0, 6.0, 0.5)
-            perseverance = st.slider("Persévérance (1-10)", 1.0, 10.0, 7.0, 0.5)
+            absences_sim = st.number_input("Absences (simulées)", 0, 30, 2)
+            heures_jeux = st.slider("Heures jeux vidéo / jour", 0.0, 8.0, 1.0, 0.5)
+            confiance_soi = st.slider("Confiance en soi (1-10)", 1, 10, 7)
+            estime_soi = st.slider("Estime de soi (1-10)", 1, 10, 7)
 
         with col3:
-            genre = st.selectbox("Genre", ["M", "F"])
-            sport = st.selectbox("Pratique du sport", ["Oui", "Non"])
-            classe = st.selectbox("Classe", ["4ème", "3ème"])
+            activite_sport = st.selectbox("Activité sportive", ["oui", "non"])
+            classe = st.selectbox("Classe", ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale"])
             type_etab = st.selectbox("Type d'établissement", ["Public", "Privé"])
 
         if st.button("🔮 Prédire"):
@@ -594,24 +593,19 @@ elif page == PAGES[3]:
                 st.error("Les données doivent être prétraitées avant la prédiction.")
                 st.stop()
 
-            input_row['heures_devoirs'] = heures_devoirs
-            input_row['motivation'] = motivation
-            input_row['heures_sommeil'] = heures_sommeil
-            input_row['stress'] = stress
-            input_row['absences'] = absences
-            input_row['temps_ecrans'] = temps_ecrans
-            input_row['confiance_soi'] = confiance_soi
-            input_row['perseverance'] = perseverance
-            input_row['genre'] = genre
-            input_row['sport'] = sport
-            input_row['classe'] = classe
-            input_row['type_etablissement'] = type_etab
-
-            # Recalculer les features dérivées
-            sport_num = 1 if sport == 'Oui' else 0
-            input_row['score_equilibre'] = (heures_sommeil + sport_num * 2) / (heures_devoirs + temps_ecrans + 1)
-            input_row['stress_absences'] = stress * absences
-            input_row['motivation_travail'] = motivation * heures_devoirs
+            # Mise à jour des valeurs avec la saisie utilisateur
+            input_row['Heures_etude_soir'] = heures_etude
+            input_row['Interet_maths'] = interet_maths
+            input_row['Heures_sommeil'] = heures_sommeil
+            input_row['Stress_1'] = stress_1
+            input_row['Activite_sportive'] = activite_sport
+            input_row['Classe'] = classe
+            input_row['Heures_jeux_video'] = heures_jeux
+            input_row['Confiance_soi'] = confiance_soi
+            input_row['Estime_soi'] = estime_soi
+            
+            # Recalculer les features dérivées via la fonction centrale
+            input_row = add_advanced_features(input_row)
 
             # Conserver uniquement les colonnes attendues par le modèle
             cols_drop = [c for c in COLS_TO_DROP if c in input_row.columns]
@@ -709,8 +703,22 @@ elif page == PAGES[4]:
 
     shap_buf = _get("shap_buf")
     if shap_buf is not None:
-        st.subheader("Importance des facteurs de réussite")
-        st.image(shap_buf, width='stretch')
+        # Vérification que le buffer contient des données valides
+        try:
+            shap_buf.seek(0, io.SEEK_END)
+            size = shap_buf.tell()
+            shap_buf.seek(0)
+            if size > 0:
+                st.subheader("Importance des facteurs de réussite")
+                st.image(shap_buf, width='stretch')
+                st.caption(
+                    "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
+                    "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
+                )
+            else:
+                st.info("💡 L'analyse SHAP n'a pas pu générer de graphique.")
+        except Exception:
+            st.error("Erreur lors de l'affichage de l'image SHAP.")
         st.caption(
             "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
             "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
