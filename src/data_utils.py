@@ -31,12 +31,15 @@ def valider_schema(df, colonnes_requises):
     logger.info("Validation du schéma réussie.")
 
 
-def generer_donnees_synthetiques(n_eleves=300):
+def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     """
     Génère un jeu de données synthétiques réaliste.
     """
     logger.info(f"Génération de {n_eleves} données synthétiques...")
     np.random.seed(42)  # Reproductibilité
+
+    if classes_selectionnees is None:
+        classes_selectionnees = ['4ème', '3ème']
 
     data = {
         'age': np.random.normal(15.5, 1.2, n_eleves).clip(12, 19),
@@ -64,7 +67,7 @@ def generer_donnees_synthetiques(n_eleves=300):
         'duree_trajet': np.random.gamma(2, 15, n_eleves).clip(5, 120),
         'heure_coucher': [f"{np.random.randint(21, 24)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
         'heure_lever': [f"{np.random.randint(6, 9)}h{np.random.choice([0, 15, 30, 45]):02d}" for _ in range(n_eleves)],
-        'classe': np.random.choice(['4ème', '3ème'], n_eleves),
+        'classe': np.random.choice(classes_selectionnees, n_eleves),
         'education_physique': np.random.normal(12, 3, n_eleves).clip(0, 20),
         'matiere_enseignement_scientifique': np.random.normal(11, 4, n_eleves).clip(0, 20),
         'specialite1': np.random.normal(13, 3, n_eleves).clip(0, 20),

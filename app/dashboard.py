@@ -78,14 +78,28 @@ if page == PAGES[0]:
     with col_gen:
         st.subheader("Générer des données synthétiques")
         n_eleves = st.number_input("Nombre d'élèves", min_value=50, max_value=2000, value=300, step=50)
+        
+        classes_dispo = [
+            "Sixième", "Cinquième", "Quatrième", "Troisième", 
+            "Seconde", "Première", "Terminale"
+        ]
+        classes_sel = st.multiselect(
+            "Classes à inclure", 
+            options=classes_dispo,
+            default=["Quatrième", "Troisième"]
+        )
+        
         if st.button("🔄 Générer", key="btn_gen"):
-            with st.spinner("Génération en cours…"):
-                df = generer_donnees_synthetiques(int(n_eleves))
-            _set("df_raw", df)
-            _set("df_clean", None)
-            _set("df_feat", None)
-            _set("models", None)
-            st.success(f"✅ {len(df)} élèves générés.")
+            if not classes_sel:
+                st.error("⚠️ Veuillez sélectionner au moins une classe.")
+            else:
+                with st.spinner("Génération en cours…"):
+                    df = generer_donnees_synthetiques(int(n_eleves), classes_selectionnees=classes_sel)
+                _set("df_raw", df)
+                _set("df_clean", None)
+                _set("df_feat", None)
+                _set("models", None)
+                st.success(f"✅ {len(df)} élèves générés ({', '.join(classes_sel)}).")
 
     with col_upload:
         st.subheader("Charger un fichier CSV")
