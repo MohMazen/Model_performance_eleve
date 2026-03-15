@@ -11,19 +11,24 @@ logger = logging.getLogger(__name__)
 
 def add_advanced_features(df):
     """
-    Ajoute des variables calculées et des interactions.
+    Ajoute des variables calculées et des interactions basées sur le nouveau schéma.
     """
     logger.info("Ajout des features avancées...")
     df_feat = df.copy()
 
     # 1. Score d'Équilibre Vie (Sommeil + Sport vs Devoirs + Écran)
-    sport_num = (df_feat['sport'] == 'Oui').astype(int)
-    df_feat['score_equilibre'] = (df_feat['heures_sommeil'] + sport_num * 2) / (df_feat['heures_devoirs'] + df_feat['temps_ecrans'] + 1)
+    # On utilise 'Heures_sommeil', 'Heures_etude_soir', 'Heures_jeux_video', etc.
+    sport_num = (df_feat['Activite_sportive'] == 'oui').astype(int)
+    ecrans = df_feat[['Heures_jeux_video', 'Heures_reseaux_sociaux', 'Heures_streaming']].sum(axis=1)
+    
+    df_feat['score_equilibre'] = (df_feat['Heures_sommeil'] + sport_num * 2) / (df_feat['Heures_etude_soir'] + ecrans + 1)
 
     # 2. Interactions logiques
-    df_feat['stress_absences'] = df_feat['stress'] * df_feat['absences']
-    df_feat['motivation_travail'] = df_feat['motivation'] * df_feat['heures_devoirs']
-
+    # Stress_1 est souvent entre 0 et 4 dans ce genre de questionnaire (perçu)
+    # On s'assure que ce sont des entiers/floats
+    df_feat['stress_total'] = pd.to_numeric(df_feat['Stress_1'], errors='coerce').fillna(0) + \
+                              pd.to_numeric(df_feat['Stress_2'], errors='coerce').fillna(0)
+    
     # 3. Target de classification (Succès/Échec)
     if 'note_moyenne' in df_feat.columns:
         df_feat[TARGET_CLF] = (df_feat['note_moyenne'] >= SEUIL_REUSSITE).astype(int)
@@ -32,14 +37,15 @@ def add_advanced_features(df):
 
 
 def parse_heure(v):
-    """Convertit '22h30' en float (22.5). Retourne 0.0 en cas d'erreur."""
+    """Convertit '22:30' ou '22h30' en float (22.5)."""
     try:
-        if v is None:
+        if v is None or pd.isna(v):
             return 0.0
-        if 'h' in str(v):
-            h, m = str(v).split('h')
+        s = str(v).replace('h', ':')
+        if ':' in s:
+            h, m = s.split(':')
             return float(h) + float(m) / 60
-        return float(v)
+        return float(s)
     except (ValueError, AttributeError, TypeError):
         return 0.0
 
@@ -47,7 +53,7 @@ def parse_heure(v):
 def prenttoyer_horaires(df):
     """Convertit les colonnes horaires en numérique."""
     df_h = df.copy()
-    for col in ['heure_coucher', 'heure_lever']:
+    for col in ['Heure_coucher', 'Heure_lever']:
         if col in df_h.columns:
             df_h[f"{col}_num"] = df_h[col].apply(parse_heure)
     return df_h
