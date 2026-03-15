@@ -428,7 +428,17 @@ elif page == PAGES[2]:
         
         save_path = st.text_input("Chemin et nom du fichier de sauvegarde", value=MODEL_FILE, key="save_path_input")
         
-        if st.button("💾 Sauvegarder"):
+        file_exists = os.path.exists(save_path)
+        can_save = True
+        
+        if file_exists:
+            st.warning(f"⚠️ Le fichier `{save_path}` existe déjà.")
+            confirm_overwrite = st.checkbox("Confirmer l'écrasement", value=False)
+            if not confirm_overwrite:
+                can_save = False
+                st.info("Cochez la case ci-dessus pour autoriser l'écriture.")
+
+        if st.button("💾 Sauvegarder", disabled=not can_save):
             mm = _get("mm")
             if mm:
                 dir_name = os.path.dirname(save_path)
