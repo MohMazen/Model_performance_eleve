@@ -104,13 +104,18 @@ if page == PAGES[0]:
     with col_upload:
         st.subheader("Charger un fichier CSV")
         uploaded = st.file_uploader("Fichier CSV (séparateur ';')", type=["csv"])
-        if uploaded is not None:
+        
+        # On ne reset que si un NOUVEAU fichier est chargé
+        last_uploaded_name = _get("last_uploaded_name")
+        
+        if uploaded is not None and uploaded.name != last_uploaded_name:
             try:
                 df_up = pd.read_csv(uploaded, sep=';', encoding='utf-8-sig')
                 _set("df_raw", df_up)
                 _set("df_clean", None)
                 _set("df_feat", None)
                 _set("models", None)
+                _set("last_uploaded_name", uploaded.name)
                 st.success(f"✅ Fichier chargé : {df_up.shape[0]} lignes, {df_up.shape[1]} colonnes.")
             except Exception as e:
                 st.error(f"Erreur de lecture : {e}")
