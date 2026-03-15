@@ -23,6 +23,8 @@ class ModelManager:
         self.best_model_clf = None
         self.best_model_nn_reg = None
         self.best_model_nn_clf = None
+        self.best_overall_reg = None
+        self.best_overall_clf = None
         self.subject_models = {}
 
     def prepare_pipeline(self, X):
@@ -136,6 +138,8 @@ class ModelManager:
             'clf': self.best_model_clf,
             'nn_reg': self.best_model_nn_reg,
             'nn_clf': self.best_model_nn_clf,
+            'best_reg': self.best_overall_reg,
+            'best_clf': self.best_overall_clf,
             'subject_models': self.subject_models
         }, path)
         logger.info(f"Modèles sauvegardés dans {path}")
@@ -148,6 +152,8 @@ class ModelManager:
             self.best_model_clf = dict_models['clf']
             self.best_model_nn_reg = dict_models.get('nn_reg')
             self.best_model_nn_clf = dict_models.get('nn_clf')
+            self.best_overall_reg = dict_models.get('best_reg')
+            self.best_overall_clf = dict_models.get('best_clf')
             self.subject_models = dict_models.get('subject_models', {})
             logger.info("Modèles chargés avec succès.")
             return True

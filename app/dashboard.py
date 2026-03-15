@@ -325,7 +325,27 @@ elif page == PAGES[2]:
                 _set("metrics_nn_clf", metrics_nn_clf)
                 _set("confusion_matrix", cm)
                 _set("feature_columns", list(X_train.columns))
-                st.success("✅ Modèles entraînés avec succès.")
+
+                # Sélection du meilleur modèle global
+                if metrics_nn_reg['r2'] > metrics_reg['r2']:
+                    mm.best_overall_reg = model_nn_reg
+                    _set("best_reg_type", "Réseau de Neurones")
+                else:
+                    mm.best_overall_reg = model_reg
+                    _set("best_reg_type", "XGBoost")
+
+                if metrics_nn_clf['accuracy'] > metrics_clf['accuracy']:
+                    mm.best_overall_clf = model_nn_clf
+                    _set("best_clf_type", "Réseau de Neurones")
+                else:
+                    mm.best_overall_clf = model_clf
+                    _set("best_clf_type", "Random Forest")
+                
+                # Mettre à jour les modèles actifs avec les meilleurs
+                _set("model_reg", mm.best_overall_reg)
+                _set("model_clf", mm.best_overall_clf)
+
+                st.success(f"✅ Modèles entraînés avec succès. Meilleurs : { _get('best_reg_type') } (Rég) et { _get('best_clf_type') } (Clf).")
             except Exception as e:
                 st.error(f"Erreur lors de l'entraînement : {e}")
 
@@ -403,15 +423,19 @@ elif page == PAGES[2]:
             - **Prédit Échec / Réel Réussite** : Faux Négatifs (le modèle a manqué une réussite).
             """)
 
-        if st.button("💾 Sauvegarder les modèles"):
+        st.markdown("---")
+        st.subheader("💾 Sauvegarder les modèles")
+        
+        save_path = st.text_input("Chemin et nom du fichier de sauvegarde", value=MODEL_FILE, key="save_path_input")
+        
+        if st.button("💾 Sauvegarder"):
             mm = _get("mm")
             if mm:
-                save_path = st.text_input("Chemin de sauvegarde", value=MODEL_FILE)
                 dir_name = os.path.dirname(save_path)
                 if dir_name:
                     os.makedirs(dir_name, exist_ok=True)
                 mm.save_models(path=save_path)
-                st.success(f"✅ Modèles sauvegardés dans {save_path}.")
+                st.success(f"✅ Modèles sauvegardés dans {save_path}. Le modèle le plus performant sera utilisé par défaut.")
             else:
                 st.error("Aucun modèle disponible.")
 
@@ -451,8 +475,9 @@ elif page == PAGES[3]:
                     new_mm = ModelManager()
                     if new_mm.load_models(path=full_path):
                         _set("mm", new_mm)
-                        _set("model_reg", new_mm.best_model_reg)
-                        _set("model_clf", new_mm.best_model_clf)
+                        # Utiliser les meilleurs modèles globaux s'ils existent, sinon les modèles par défaut
+                        _set("model_reg", new_mm.best_overall_reg if new_mm.best_overall_reg else new_mm.best_model_reg)
+                        _set("model_clf", new_mm.best_overall_clf if new_mm.best_overall_clf else new_mm.best_model_clf)
                         _set("model_nn_reg", new_mm.best_model_nn_reg)
                         _set("model_nn_clf", new_mm.best_model_nn_clf)
                         # On suppose que les features sont les mêmes que celles du pipeline
