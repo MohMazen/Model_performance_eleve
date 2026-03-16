@@ -255,7 +255,7 @@ elif page == PAGES[1]:
                 new_cols = [c for c in df_feat.columns if c not in df.columns]
                 st.write(f"**{len(new_cols)} nouvelles colonnes créées :** {', '.join(new_cols)}")
                 
-                st.markdown("""
+                st.markdown(r"""
                 **Signification des variables ajoutées :**
                 - **`score_equilibre`** : Ratio entre le repos/détente (sommeil, sport) et la charge (devoirs, écrans). Un score élevé indique un meilleur équilibre de vie.
                 - **`stress_absences`** : Produit entre le stress et les absences, soulignant un comportement potentiellement à risque.
@@ -444,7 +444,7 @@ elif page == PAGES[2]:
         with st.expander("ℹ️ Comprendre les métriques d'évaluation"):
             col_inf1, col_inf2 = st.columns(2)
             with col_inf1:
-                st.markdown("""
+                st.markdown(r"""
                 **Régression (Prédire la note) :**
                 - **R²** : Score entre $-\infty$ et 1. Plus il est proche de 1, plus le modèle explique bien les variations de notes.
                 - **MAE** : Écart moyen (en points) entre la note réelle et la note prédite.
