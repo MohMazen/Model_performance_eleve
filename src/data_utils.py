@@ -143,12 +143,12 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     # --- CALCUL DES CIBLES RÉALISTES ---
     for i in range(n_eleves):
         bonus = 0
-        bonus += df.loc[i, 'Heures_etude_soir'] * 0.5
-        bonus += (df.loc[i, 'Interet_maths'] + df.loc[i, 'Interet_francais']) * 0.1
-        bonus -= (df.loc[i, 'Heures_jeux_video'] + df.loc[i, 'Heures_reseaux_sociaux']) * 0.3
-        bonus -= (df.loc[i, 'Stress_1'] + df.loc[i, 'Stress_2']) * 0.2
-        if df.loc[i, 'Activite_sportive'] == 'oui': bonus += 0.5
-        if df.loc[i, 'Duree_trajet_AR_min'] > 60: bonus -= 0.7
+        bonus += df.loc[i, 'heures_etude_soir'] * 0.5
+        bonus += (df.loc[i, 'interet_maths'] + df.loc[i, 'interet_francais']) * 0.1
+        bonus -= (df.loc[i, 'heures_jeux_video'] + df.loc[i, 'heures_reseaux_sociaux']) * 0.3
+        bonus -= (df.loc[i, 'stress_1'] + df.loc[i, 'stress_2']) * 0.2
+        if df.loc[i, 'activite_sportive'] == 'oui': bonus += 0.5
+        if df.loc[i, 'duree_trajet_ar_min'] > 60: bonus -= 0.7
 
         df.loc[i, 'note_francais'] = np.clip(np.random.normal(12, 2) + bonus, 0, 20)
         df.loc[i, 'note_maths'] = np.clip(np.random.normal(11, 3) + bonus, 0, 20)
