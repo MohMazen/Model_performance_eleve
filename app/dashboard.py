@@ -279,11 +279,16 @@ elif page == PAGES[2]:
         st.warning("⚠️ Effectuez d'abord le Preprocessing (Page 2).")
         st.stop()
 
-    # Saisie du nom du modèle
-    model_name = st.text_input("Nom du modèle (optionnel)", 
-                              value=_get("model_name", ""), 
-                              placeholder="Ex: XGBoost_v1",
-                              help="Ce nom apparaîtra sur les graphiques et dans le rapport.")
+    # Saisie du nom du modèle via une liste déroulante multi-sélection
+    model_options = ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM"]
+    selected_models = st.multiselect(
+        "Modèles à identifier (Nom du modèle)",
+        options=model_options,
+        default=_get("selected_models", []),
+        help="Sélectionnez les modèles qui seront mentionnés dans le rapport et les résultats."
+    )
+    _set("selected_models", selected_models)
+    model_name = ", ".join(selected_models) if selected_models else ""
     _set("model_name", model_name)
 
     if st.button("🚀 Entraîner les modèles"):
