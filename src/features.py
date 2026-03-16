@@ -16,16 +16,16 @@ def add_advanced_features(df):
     logger.info("Ajout des features avancées...")
     df_feat = df.copy()
 
-    sport_num = (df_feat['Activite_sportive'] == 'oui').apply(lambda x: 1 if x else 0)
-    ecrans = df_feat[['Heures_jeux_video', 'Heures_reseaux_sociaux', 'Heures_streaming']].sum(axis=1)
+    sport_num = (df_feat['activite_sportive'] == 'oui').apply(lambda x: 1 if x else 0)
+    ecrans = df_feat[['heures_jeux_video', 'heures_reseaux_sociaux', 'heures_streaming']].sum(axis=1)
     
-    df_feat['score_equilibre'] = (df_feat['Heures_sommeil'] + sport_num * 2) / (df_feat['Heures_etude_soir'] + ecrans + 1)
+    df_feat['score_equilibre'] = (df_feat['heures_sommeil'] + sport_num * 2) / (df_feat['heures_etude_soir'] + ecrans + 1)
 
     # 2. Interactions logiques
-    # Stress_1 est souvent entre 0 et 4 dans ce genre de questionnaire (perçu)
+    # stress_1 est souvent entre 0 et 4 dans ce genre de questionnaire (perçu)
     # On s'assure que ce sont des entiers/floats
-    df_feat['stress_total'] = pd.to_numeric(df_feat['Stress_1'], errors='coerce').fillna(0) + \
-                              pd.to_numeric(df_feat['Stress_2'], errors='coerce').fillna(0)
+    df_feat['stress_total'] = pd.to_numeric(df_feat['stress_1'], errors='coerce').fillna(0) + \
+                              pd.to_numeric(df_feat['stress_2'], errors='coerce').fillna(0)
     
     # 3. Target de classification (Succès/Échec)
     if 'note_moyenne' in df_feat.columns:
@@ -51,7 +51,7 @@ def parse_heure(v):
 def prenttoyer_horaires(df):
     """Convertit les colonnes horaires en numérique."""
     df_h = df.copy()
-    for col in ['Heure_coucher', 'Heure_lever']:
+    for col in ['heure_coucher', 'heure_lever']:
         if col in df_h.columns:
             df_h[f"{col}_num"] = df_h[col].apply(parse_heure)
     return df_h

@@ -45,13 +45,9 @@ class TestAddAdvancedFeatures:
         df_result = add_advanced_features(df_base)
         assert 'score_equilibre' in df_result.columns
 
-    def test_colonne_stress_absences_creee(self, df_base):
+    def test_colonne_stress_total_creee(self, df_base):
         df_result = add_advanced_features(df_base)
-        assert 'stress_absences' in df_result.columns
-
-    def test_colonne_motivation_travail_creee(self, df_base):
-        df_result = add_advanced_features(df_base)
-        assert 'motivation_travail' in df_result.columns
+        assert 'stress_total' in df_result.columns
 
     def test_colonne_reussite_creee(self, df_base):
         df_result = add_advanced_features(df_base)
@@ -75,8 +71,8 @@ class TestNettoyerDonnees:
     def test_pas_de_nan_apres_nettoyage(self):
         df = generer_donnees_synthetiques(n_eleves=100)
         # Introduire des NaN
-        df.loc[0:5, 'heures_devoirs'] = np.nan
-        df.loc[3:7, 'genre'] = np.nan
+        df.loc[0:5, 'heures_etude_soir'] = np.nan
+        df.loc[3:7, 'classe'] = np.nan
         df_clean = nettoyer_donnees(df)
         assert df_clean.isnull().sum().sum() == 0
 

@@ -114,6 +114,7 @@ if page == PAGES[0]:
         if uploaded is not None and uploaded.name != last_uploaded_name:
             try:
                 df_up = pd.read_csv(uploaded, sep=';', encoding='utf-8-sig')
+                df_up.columns = [c.lower() for c in df_up.columns]
                 _set("df_raw", df_up)
                 _set("df_clean", None)
                 _set("df_feat", None)
@@ -184,7 +185,7 @@ if page == PAGES[0]:
                     with cols[j]:
                         vc = df[col_name].value_counts().reset_index(name="count")
                         # Trier par heure si c'est une distribution horaire
-                        if col_name in ['Heure_lever', 'Heure_coucher', 'heure_lever', 'heure_coucher']:
+                        if col_name in ['heure_lever', 'heure_coucher']:
                             vc = vc.sort_values(by=col_name)
                         else:
                             vc = vc.sort_values(by="count", ascending=False).head(20)
@@ -650,15 +651,15 @@ elif page == PAGES[3]:
                 st.stop()
 
             # Mise à jour des valeurs avec la saisie utilisateur
-            input_row['Heures_etude_soir'] = heures_etude
-            input_row['Interet_maths'] = interet_maths
-            input_row['Heures_sommeil'] = heures_sommeil
-            input_row['Stress_1'] = stress_1
-            input_row['Activite_sportive'] = activite_sport
-            input_row['Classe'] = classe
-            input_row['Heures_jeux_video'] = heures_jeux
-            input_row['Confiance_soi'] = confiance_soi
-            input_row['Estime_soi'] = estime_soi
+            input_row['heures_etude_soir'] = heures_etude
+            input_row['interet_maths'] = interet_maths
+            input_row['heures_sommeil'] = heures_sommeil
+            input_row['stress_1'] = stress_1
+            input_row['activite_sportive'] = activite_sport
+            input_row['classe'] = classe
+            input_row['heures_jeux_video'] = heures_jeux
+            input_row['confiance_soi'] = confiance_soi
+            input_row['estime_soi'] = estime_soi
             
             # Recalculer les features dérivées via la fonction centrale
             input_row = add_advanced_features(input_row)
@@ -709,7 +710,10 @@ elif page == PAGES[3]:
                     X_all = df_feat.drop(columns=cols_drop + [TARGET_REG, TARGET_CLF])
                     X_all = X_all[feature_columns]
 
-                    df_preds = df_feat[['nom', 'prenom', TARGET_REG]].copy()
+                    # Identification dynamique des colonnes d'identité pour éviter les erreurs de casse
+                    ident_cols = [c for c in df_feat.columns if str(c).lower() in ['nom', 'prenom', 'prénom']]
+                    cols_to_select = ident_cols + [TARGET_REG]
+                    df_preds = df_feat[cols_to_select].copy()
                     df_preds['Note Prédite (Moy)'] = model_reg.predict(X_all)
                     
                     if mm and mm.subject_models:

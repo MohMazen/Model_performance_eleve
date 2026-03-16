@@ -136,6 +136,8 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     data['Nom_plateforme'] = ""
     data['Frequence_mediatheque'] = np.random.choice(['jamais', 'rarement', 'parfois', 'souvent'], n_eleves)
 
+    # On convertit toutes les clés en minuscules pour assurer l'insensibilité à la casse
+    data = {k.lower(): v for k, v in data.items()}
     df = pd.DataFrame(data)
 
     # --- CALCUL DES CIBLES RÉALISTES ---
@@ -161,6 +163,8 @@ def charger_donnees(chemin):
     """Charge les données depuis CSV."""
     try:
         df = pd.read_csv(chemin, sep=';', encoding='utf-8-sig')
+        # On passe toutes les colonnes en minuscules pour l'insensibilité à la casse
+        df.columns = [c.lower() for c in df.columns]
         logger.info(f"Données chargées : {df.shape}")
         return df
     except Exception as e:

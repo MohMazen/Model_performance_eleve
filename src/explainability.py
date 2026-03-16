@@ -9,19 +9,19 @@ logger = logging.getLogger(__name__)
 
 # Dictionnaire de traduction des variables
 TRADUCTIONS = {
-    'heures_devoirs': 'Heures de devoirs',
-    'motivation': 'Motivation (1-10)',
+    'heures_etude_soir': 'Heures d\'étude (soir)',
+    'interet_maths': 'Intérêt pour les Maths',
     'heures_sommeil': 'Heures de sommeil',
-    'stress': 'Niveau de stress',
+    'stress_1': 'Niveau de stress 1',
+    'stress_2': 'Niveau de stress 2',
     'absences': "Nombre d'absences",
-    'temps_ecrans': "Temps d'écrans",
+    'heures_jeux_video': "Jeux Vidéo",
     'score_equilibre': "Équilibre Vie/Études",
-    'stress_absences': 'Interaction Stress/Absences',
-    'motivation_travail': 'Interaction Motivation/Travail',
-    'genre_M': 'Genre : Garçon',
-    'genre_F': 'Genre : Fille',
-    'sport_Oui': 'Pratique du sport',
-    'sport_Non': 'Pas de sport'
+    'stress_total': 'Stress Total',
+    'genre_m': 'Genre : Garçon',
+    'genre_f': 'Genre : Fille',
+    'activite_sportive_oui': 'Pratique du sport',
+    'activite_sportive_non': 'Pas de sport'
 }
 
 
