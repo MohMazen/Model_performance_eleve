@@ -6,6 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
+from datetime import datetime
 from src.config import REPORT_FILE
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,7 @@ Sur la base des prédictions, voici les préconisations suggérées :
 - **Sensibilisation à l'équilibre** : Le score d'équilibre étant un facteur clé, des ateliers sur l'organisation du temps et le sommeil pourraient réduire les risques d'échec.
 
 ---
-*Rapport généré par l'IA Antigravity v2.1 — Page générée le {pd.Timestamp.now().strftime('%d/%m/%Y')}*
+*Rapport généré par l'IA Antigravity v2.1 — Page générée le {datetime.now().strftime('%d/%m/%Y')}*
 """
     if path is not None:
         try:

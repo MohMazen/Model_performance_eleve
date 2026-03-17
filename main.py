@@ -33,11 +33,24 @@ def main():
 
     # 1. Chargement / Génération
     os.makedirs('data', exist_ok=True)
-    if not os.path.exists(DATA_FILE):
+    regenerate = False
+    if os.path.exists(DATA_FILE):
+        df = charger_donnees(DATA_FILE)
+        # Vérifier la compatibilité du schéma (les colonnes attendues existent-elles ?)
+        required_cols = ['activite_sportive', 'heures_etude_soir', 'heures_jeux_video',
+                         'heures_sommeil', 'stress_1', 'stress_2', 'heures_reseaux_sociaux',
+                         'heures_streaming']
+        missing = [c for c in required_cols if c not in df.columns]
+        if missing:
+            logger.warning(f"Schéma CSV incompatible (colonnes manquantes : {missing}). Régénération...")
+            regenerate = True
+    else:
+        regenerate = True
+
+    if regenerate:
         df = generer_donnees_synthetiques(500)
         df.to_csv(DATA_FILE, sep=';', index=False, encoding='utf-8-sig')
-    else:
-        df = charger_donnees(DATA_FILE)
+        logger.info("Nouveau fichier CSV généré avec le schéma à jour.")
 
     # 2. Preprocessing & Feature Engineering
     df = nettoyer_donnees(df)

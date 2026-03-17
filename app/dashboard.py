@@ -796,6 +796,9 @@ elif page == PAGES[5]:
     metrics_clf = _get("metrics_clf")
     metrics_nn_reg = _get("metrics_nn_reg")
     metrics_nn_clf = _get("metrics_nn_clf")
+    metrics_svm_reg = _get("metrics_svm_reg")
+    metrics_svm_clf = _get("metrics_svm_clf")
+    selected_features = _get("selected_features")
 
     if df_feat is None or metrics_reg is None:
         st.warning("⚠️ Entraînez d'abord les modèles (Page 3).")
