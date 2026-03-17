@@ -806,6 +806,9 @@ elif page == PAGES[5]:
         rapport = generer_rapport_markdown(df_feat, metrics_reg, metrics_clf, path=None,
                                            metrics_nn_reg=metrics_nn_reg,
                                            metrics_nn_clf=metrics_nn_clf,
+                                           metrics_svm_reg=metrics_svm_reg,
+                                           metrics_svm_clf=metrics_svm_clf,
+                                           selected_features=selected_features,
                                            model_name=model_name)
         _set("rapport_md", rapport)
         st.success("✅ Rapport généré.")
