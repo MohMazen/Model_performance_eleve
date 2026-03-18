@@ -28,11 +28,12 @@ TRADUCTIONS = {
 def generate_shap_analysis(model_pipeline, X_sample, buf=None):
     """
     Génère une analyse d'importance des facteurs en français.
+    Gère les pipelines avec ou sans étape de sélection de variables.
 
     Parameters
     ----------
     model_pipeline : sklearn Pipeline
-        Pipeline entraîné contenant 'pre' et 'model'.
+        Pipeline entraîné contenant 'pre', optionnellement 'select', et 'model'.
     X_sample : pd.DataFrame
         Échantillon de données à analyser.
     buf : io.BytesIO, optional
@@ -44,19 +45,29 @@ def generate_shap_analysis(model_pipeline, X_sample, buf=None):
     """
     logger.info("Calcul des valeurs SHAP...")
 
-    preprocessor = model_pipeline.named_steps['pre']
-    model = model_pipeline.named_steps['model']
-
-    X_transformed = preprocessor.transform(X_sample)
-
-    cat_feature_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
-    num_feature_names = preprocessor.transformers_[0][2]
-    all_feature_names = list(num_feature_names) + list(cat_feature_names)
-
-    # Application de la traduction
-    feature_names_fr = [TRADUCTIONS.get(name, name) for name in all_feature_names]
-
     try:
+        preprocessor = model_pipeline.named_steps['pre']
+        model = model_pipeline.named_steps['model']
+
+        # 1. Appliquer le preprocessing
+        X_transformed = preprocessor.transform(X_sample)
+
+        # 2. Récupérer les noms de toutes les features après preprocessing
+        cat_feature_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
+        num_feature_names = preprocessor.transformers_[0][2]
+        all_feature_names = list(num_feature_names) + list(cat_feature_names)
+
+        # 3. Si le pipeline contient un sélecteur, filtrer les données et les noms
+        if 'select' in model_pipeline.named_steps:
+            selector = model_pipeline.named_steps['select']
+            X_transformed = selector.transform(X_transformed)
+            selected_mask = selector.get_support()
+            all_feature_names = [name for name, sel in zip(all_feature_names, selected_mask) if sel]
+
+        # 4. Application de la traduction
+        feature_names_fr = [TRADUCTIONS.get(name, name) for name in all_feature_names]
+
+        # 5. Analyse SHAP
         explainer = shap.Explainer(model, X_transformed)
         shap_values = explainer(X_transformed)
 
@@ -80,7 +91,9 @@ def generate_shap_analysis(model_pipeline, X_sample, buf=None):
             plt.show()
         plt.close()
 
+        logger.info("Analyse SHAP terminée avec succès.")
         return shap_values
     except Exception as e:
         logger.error(f"Erreur lors de l'analyse SHAP : {e}")
+        plt.close('all')
         return None
