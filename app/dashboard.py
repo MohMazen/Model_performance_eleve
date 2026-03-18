@@ -754,35 +754,34 @@ elif page == PAGES[4]:
             try:
                 buf = io.BytesIO()
                 sample_size = min(50, len(X_test))
-                generate_shap_analysis(model_reg, X_test.iloc[:sample_size], buf=buf)
+                result = generate_shap_analysis(model_reg, X_test.iloc[:sample_size], buf=buf)
                 buf.seek(0)
-                _set("shap_buf", buf)
-                st.success("✅ Analyse SHAP terminée.")
+                if result is not None and buf.getbuffer().nbytes > 0:
+                    _set("shap_buf", buf)
+                    _set("shap_error", None)
+                    st.success("✅ Analyse SHAP terminée.")
+                else:
+                    _set("shap_buf", None)
+                    _set("shap_error", "L'analyse SHAP n'a pas retourné de résultat. Consultez les logs pour plus de détails.")
+                    st.warning("⚠️ L'analyse SHAP n'a pas pu produire de graphique.")
             except Exception as e:
+                _set("shap_buf", None)
+                _set("shap_error", str(e))
                 st.error(f"Erreur SHAP : {e}")
 
     shap_buf = _get("shap_buf")
+    shap_error = _get("shap_error")
+
     if shap_buf is not None:
-        # Vérification que le buffer contient des données valides
-        try:
-            shap_buf.seek(0, io.SEEK_END)
-            size = shap_buf.tell()
-            shap_buf.seek(0)
-            if size > 0:
-                st.subheader("Importance des facteurs de réussite")
-                st.image(shap_buf, width='stretch')
-                st.caption(
-                    "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
-                    "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
-                )
-            else:
-                st.info("💡 L'analyse SHAP n'a pas pu générer de graphique.")
-        except Exception:
-            st.error("Erreur lors de l'affichage de l'image SHAP.")
+        st.subheader("Importance des facteurs de réussite")
+        shap_buf.seek(0)
+        st.image(shap_buf, width='stretch')
         st.caption(
             "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
             "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
         )
+    elif shap_error:
+        st.info(f"💡 {shap_error}")
 
 
 # ---------------------------------------------------------------------------
