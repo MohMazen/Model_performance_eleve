@@ -76,7 +76,12 @@ def main():
     model_nn_reg = mm.train_nn_regression(X_train, y_reg_train)
     model_nn_clf = mm.train_nn_classification(X_train, y_clf_train)
 
-    # Évaluation sur les données de TEST (jamais vues à l'entraînement)
+    # 6. Explicabilité (Placée avant les prédictions comme demandé)
+    sample_size = min(50, len(X_test))
+    generate_shap_analysis(model_reg, X_test.iloc[:sample_size])
+    generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_reg_test.iloc[:sample_size])
+
+    # 7. Évaluation sur les données de TEST (jamais vues à l'entraînement)
     y_pred_reg = model_reg.predict(X_test)
     y_pred_clf = model_clf.predict(X_test)
     y_pred_nn_reg = model_nn_reg.predict(X_test)
@@ -110,12 +115,8 @@ def main():
     logger.info(f"Métriques NN régression : R²={metrics_nn_reg['r2']:.4f}, MAE={metrics_nn_reg['mae']:.4f}")
     logger.info(f"Métriques NN classification : Accuracy={metrics_nn_clf['accuracy']:.2f}%, F1={metrics_nn_clf['f1']:.4f}")
 
-    # 6. Explicabilité
-    sample_size = min(50, len(X_test))
-    generate_shap_analysis(model_reg, X_test.iloc[:sample_size])
-    generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_reg_test.iloc[:sample_size])
 
-    # 7. Sauvegarde et Rapport
+    # 8. Sauvegarde et Rapport
     mm.save_models()
     generer_rapport_markdown(df, metrics_reg, metrics_clf,
                              metrics_nn_reg=metrics_nn_reg,
