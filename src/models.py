@@ -68,7 +68,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         
         if subject_name:
             self.subject_models[subject_name] = search.best_estimator_
@@ -99,7 +99,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         self.best_model_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification : {search.best_score_:.4f}")
         return self.best_model_clf
@@ -122,7 +122,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         self.best_model_nn_reg = search.best_estimator_
         logger.info(f"Meilleur score R2 rÃ©gression NN : {search.best_score_:.4f}")
         return self.best_model_nn_reg
@@ -145,7 +145,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         self.best_model_nn_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification NN : {search.best_score_:.4f}")
         return self.best_model_nn_clf
@@ -168,7 +168,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         self.best_model_svm_reg = search.best_estimator_
         logger.info(f"Meilleur score R2 rÃ©gression SVM : {search.best_score_:.4f}")
         return self.best_model_svm_reg
@@ -190,7 +190,7 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
+        search.fit(X, y)
         self.best_model_svm_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification SVM : {search.best_score_:.4f}")
         return self.best_model_svm_clf

@@ -69,10 +69,6 @@ def main():
 
     # 5. Modélisation
     mm = ModelManager()
-    print(f"DEBUG: y_reg_train NaNs: {y_reg_train.isna().sum()}")
-    print(f"DEBUG: X_train NaNs: {X_train.isna().sum().sum()}")
-    if y_reg_train.isna().any():
-        print(y_reg_train[y_reg_train.isna()])
     mm.prepare_pipeline(X_train)
 
     model_reg = mm.train_regression(X_train, y_reg_train)
