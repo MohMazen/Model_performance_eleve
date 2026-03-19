@@ -12,8 +12,8 @@ TRADUCTIONS = {
     'heures_etude_soir': 'Heures d\'étude (soir)',
     'interet_maths': 'Intérêt pour les Maths',
     'heures_sommeil': 'Heures de sommeil',
-    'stress_1': 'Niveau de stress 1',
-    'stress_2': 'Niveau de stress 2',
+    'stress_personnel': 'Niveau de stress personnel',
+    'perseverance': 'Persévérance',
     'absences': "Nombre d'absences",
     'heures_jeux_video': "Jeux Vidéo",
     'score_equilibre': "Équilibre Vie/Études",
@@ -21,8 +21,96 @@ TRADUCTIONS = {
     'genre_m': 'Genre : Garçon',
     'genre_f': 'Genre : Fille',
     'activite_sportive_oui': 'Pratique du sport',
-    'activite_sportive_non': 'Pas de sport'
+    'activite_sportive_non': 'Pas de sport',
+    'temps_ecrans_total': 'Temps d\'écran total',
+    'ratio_etude_ecrans': 'Ratio Étude/Écrans',
+    'indice_motivation': 'Indice de Motivation',
+    'organisation': 'Capacité d\'organisation',
+    'confiance_soi': 'Confiance en soi',
+    'estime_soi': 'Estime de soi'
 }
+
+
+def generate_shap_failure_analysis(model_pipeline, X_sample, y_true, seuil=10, buf=None):
+    """
+    Génère une analyse SHAP spécifique aux élèves en situation d'échec.
+    Utilise une palette de couleur rouge pour l'identification des facteurs d'échec.
+    """
+    logger.info("Calcul des valeurs SHAP pour les facteurs d'échec...")
+
+    try:
+        # Filtrer uniquement les élèves en échec (note < seuil)
+        fail_mask = y_true < seuil
+        if not fail_mask.any():
+            logger.warning("Aucun élève en échec dans l'échantillon pour l'analyse SHAP.")
+            return None
+
+        X_fail = X_sample[fail_mask]
+        
+        preprocessor = model_pipeline.named_steps['pre']
+        model = model_pipeline.named_steps['model']
+
+        # Preprocessing
+        X_transformed = preprocessor.transform(X_fail)
+        cat_feature_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
+        num_feature_names = preprocessor.transformers_[0][2]
+        all_feature_names = list(num_feature_names) + list(cat_feature_names)
+
+        if 'select' in model_pipeline.named_steps:
+            selector = model_pipeline.named_steps['select']
+            X_transformed = selector.transform(X_transformed)
+            selected_mask = selector.get_support()
+            all_feature_names = [name for name, sel in zip(all_feature_names, selected_mask) if sel]
+
+        feature_names_fr = [TRADUCTIONS.get(name, name) for name in all_feature_names]
+
+        if hasattr(X_transformed, 'toarray'):
+            X_transformed = X_transformed.toarray()
+        elif hasattr(X_transformed, 'todense'):
+            X_transformed = np.asarray(X_transformed.todense())
+
+        try:
+            # Explainer
+            model_type = type(model).__name__
+            if model_type in ('XGBRegressor', 'XGBClassifier', 'RandomForestRegressor', 'RandomForestClassifier'):
+                explainer = shap.TreeExplainer(model)
+            else:
+                bg_size = min(20, X_transformed.shape[0])
+                explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size] if X_transformed.shape[0] > 0 else X_transformed)
+        except Exception as e_explainer:
+            logger.warning(f"Explainer SHAP (échec) échoué : {e_explainer}. Fallback.")
+            explainer = shap.KernelExplainer(model.predict, X_transformed[:1] if X_transformed.shape[0] > 0 else X_transformed)
+
+        shap_values = explainer(X_transformed)
+
+        # Graphique rouge pour l'échec
+        fig, ax = plt.subplots(figsize=(10, 8))
+        shap.summary_plot(
+            shap_values,
+            X_transformed,
+            feature_names=feature_names_fr,
+            plot_type="bar",
+            color="#E74C3C",  # Rouge
+            show=False
+        )
+
+        plt.title("Facteurs contribuant à l'échec scolaire (Analyse IA)", fontsize=14, pad=20)
+        plt.xlabel("Impact moyen sur le risque d'échec", fontsize=12)
+        plt.ylabel("Facteurs analysés", fontsize=12)
+        plt.tight_layout()
+
+        if buf is not None:
+            plt.savefig(buf, format='png', bbox_inches='tight')
+        else:
+            plt.show()
+        plt.close()
+
+        logger.info("Analyse SHAP d'échec terminée avec succès.")
+        return shap_values
+    except Exception as e:
+        logger.error(f"Erreur lors de l'analyse SHAP d'échec : {e}", exc_info=True)
+        plt.close('all')
+        return None
 
 
 def generate_shap_analysis(model_pipeline, X_sample, buf=None):
@@ -72,11 +160,10 @@ def generate_shap_analysis(model_pipeline, X_sample, buf=None):
             else:
                 # Pour SVM, MLP et autres : KernelExplainer avec model.predict
                 bg_size = min(20, X_transformed.shape[0])
-                explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size])
+                explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size] if X_transformed.shape[0] > 0 else X_transformed)
         except Exception as e_explainer:
-            logger.warning(f"Explainer spécialisé échoué ({e_explainer}), fallback sur Explainer générique.")
-            # Fallback : passer model.predict (fonction callable) et non l'objet model
-            explainer = shap.Explainer(model.predict, X_transformed)
+            logger.warning(f"Explainer SHAP échoué : {e_explainer}. Fallback sur KernelExplainer.")
+            explainer = shap.KernelExplainer(model.predict, X_transformed[:1] if X_transformed.shape[0] > 0 else X_transformed)
 
         shap_values = explainer(X_transformed)
 

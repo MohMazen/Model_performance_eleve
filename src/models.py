@@ -53,7 +53,7 @@ class ModelManager:
         else:
             logger.info("Entraînement du modèle de régression (XGBoost)...")
 
-        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
         
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor), 
@@ -67,7 +67,7 @@ class ModelManager:
             'model__learning_rate': [0.01, 0.1, 0.2]
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         
         if subject_name:
@@ -84,7 +84,7 @@ class ModelManager:
         Utilise class_weight='balanced' pour gérer le déséquilibre des classes.
         """
         logger.info("Entraînement du modèle de classification (Random Forest)...")
-        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
@@ -98,7 +98,7 @@ class ModelManager:
             'model__min_samples_split': [2, 5]
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification : {search.best_score_:.4f}")
@@ -107,7 +107,7 @@ class ModelManager:
     def train_nn_regression(self, X, y):
         """Entraîne et tune un réseau de neurones pour la régression."""
         logger.info("Entraînement du modèle de régression (Réseau de Neurones)...")
-        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
@@ -121,7 +121,7 @@ class ModelManager:
             'model__learning_rate_init': [0.001, 0.01],
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_nn_reg = search.best_estimator_
         logger.info(f"Meilleur score R2 régression NN : {search.best_score_:.4f}")
@@ -130,7 +130,7 @@ class ModelManager:
     def train_nn_classification(self, X, y):
         """Entraîne et tune un réseau de neurones pour la classification."""
         logger.info("Entraînement du modèle de classification (Réseau de Neurones)...")
-        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
@@ -144,7 +144,7 @@ class ModelManager:
             'model__learning_rate_init': [0.001, 0.01],
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_nn_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification NN : {search.best_score_:.4f}")
@@ -153,7 +153,7 @@ class ModelManager:
     def train_svm_regression(self, X, y):
         """Entraîne un modèle SVR (Support Vector Regression)."""
         logger.info("Entraînement du modèle de régression (SVM)...")
-        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
@@ -167,7 +167,7 @@ class ModelManager:
             'model__kernel': ['rbf', 'poly']
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_svm_reg = search.best_estimator_
         logger.info(f"Meilleur score R2 régression SVM : {search.best_score_:.4f}")
@@ -176,7 +176,7 @@ class ModelManager:
     def train_svm_classification(self, X, y):
         """Entraîne un modèle SVC (Support Vector Classification)."""
         logger.info("Entraînement du modèle de classification (SVM)...")
-        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="median")
+        selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
             ('pre', self.preprocessor),
@@ -189,7 +189,7 @@ class ModelManager:
             'model__kernel': ['rbf', 'linear']
         }
 
-        search = RandomizedSearchCV(pipeline, param_dist, n_iter=5, cv=3, random_state=42)
+        search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_svm_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification SVM : {search.best_score_:.4f}")

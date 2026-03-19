@@ -12,7 +12,7 @@ from src.config import DATA_FILE, LOG_FILE, TARGET_REG, TARGET_CLF, COLS_TO_DROP
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees, charger_donnees
 from src.features import add_advanced_features, prenttoyer_horaires
 from src.models import ModelManager
-from src.explainability import generate_shap_analysis
+from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
 from src.reporting import generer_rapport_markdown
 
 # Configuration du Logging
@@ -38,7 +38,7 @@ def main():
         df = charger_donnees(DATA_FILE)
         # Vérifier la compatibilité du schéma (les colonnes attendues existent-elles ?)
         required_cols = ['activite_sportive', 'heures_etude_soir', 'heures_jeux_video',
-                         'heures_sommeil', 'stress_1', 'stress_2', 'heures_reseaux_sociaux',
+                         'heures_sommeil', 'stress_personnel', 'perseverance', 'heures_reseaux_sociaux',
                          'heures_streaming']
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
@@ -113,6 +113,7 @@ def main():
     # 6. Explicabilité
     sample_size = min(50, len(X_test))
     generate_shap_analysis(model_reg, X_test.iloc[:sample_size])
+    generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_reg_test.iloc[:sample_size])
 
     # 7. Sauvegarde et Rapport
     mm.save_models()

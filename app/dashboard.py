@@ -26,7 +26,7 @@ from sklearn.model_selection import train_test_split
 
 from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE
 from src.data_utils import charger_donnees, generer_donnees_synthetiques, nettoyer_donnees, valider_schema
-from src.explainability import generate_shap_analysis
+from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
 from src.features import add_advanced_features, prenttoyer_horaires
 from src.models import ModelManager
 from src.reporting import generer_rapport_markdown
@@ -258,7 +258,8 @@ elif page == PAGES[1]:
                 st.markdown(r"""
                 **Signification des variables ajoutées :**
                 - **`score_equilibre`** : Ratio entre le repos/détente (sommeil, sport) et la charge (devoirs, écrans). Un score élevé indique un meilleur équilibre de vie.
-                - **`stress_absences`** : Produit entre le stress et les absences, soulignant un comportement potentiellement à risque.
+                - **`stress_total`** : Utilise directement le niveau de stress personnel ressenti.
+                - **`perseverance`** : Capacité de l'élève à maintenir ses efforts face aux difficultés.
                 - **`motivation_travail`** : Synergie entre la motivation et les heures de devoirs (indicateur d'engagement).
                 - **`heure_coucher_num` / `heure_lever_num`** : Conversion des horaires en heures décimales.
                 - **`reussite`** : Variable cible binaire créée pour la classification (1 si $\ge$ 10, 0 sinon).
@@ -629,7 +630,8 @@ elif page == PAGES[3]:
             heures_etude = st.slider("Heures d'étude / soir", 0.0, 10.0, 3.0, 0.5)
             interet_maths = st.slider("Intérêt pour les Maths (0-10)", 0, 10, 7)
             heures_sommeil = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
-            stress_1 = st.slider("Niveau de stress 1 (0-4)", 0, 4, 1)
+            stress_personnel = st.slider("Niveau de stress personnel (0-4)", 0, 4, 1)
+            perseverance = st.slider("Niveau de persévérance (1-5)", 1, 5, 3)
 
         with col2:
             absences_sim = st.number_input("Absences (simulées)", 0, 30, 2)
@@ -654,7 +656,8 @@ elif page == PAGES[3]:
             input_row['heures_etude_soir'] = heures_etude
             input_row['interet_maths'] = interet_maths
             input_row['heures_sommeil'] = heures_sommeil
-            input_row['stress_1'] = stress_1
+            input_row['stress_personnel'] = stress_personnel
+            input_row['perseverance'] = perseverance
             input_row['activite_sportive'] = activite_sport
             input_row['classe'] = classe
             input_row['heures_jeux_video'] = heures_jeux
@@ -752,34 +755,50 @@ elif page == PAGES[4]:
     if st.button("🔍 Lancer l'analyse SHAP"):
         with st.spinner("Calcul des valeurs SHAP… (peut prendre un moment)"):
             try:
-                buf = io.BytesIO()
+                # 1. Facteurs de réussite
+                buf_succ = io.BytesIO()
                 sample_size = min(50, len(X_test))
-                result = generate_shap_analysis(model_reg, X_test.iloc[:sample_size], buf=buf)
-                buf.seek(0)
-                if result is not None and buf.getbuffer().nbytes > 0:
-                    _set("shap_buf", buf)
+                res_succ = generate_shap_analysis(model_reg, X_test.iloc[:sample_size], buf=buf_succ)
+                buf_succ.seek(0)
+                
+                # 2. Facteurs d'échec
+                buf_fail = io.BytesIO()
+                # On utilise les notes réelles du test pour filtrer les échecs dans l'analyse SHAP
+                df_feat = _get("df_feat")
+                y_test_real = df_feat.loc[X_test.index, TARGET_REG]
+                res_fail = generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_test_real.iloc[:sample_size], buf=buf_fail)
+                buf_fail.seek(0)
+
+                if res_succ is not None:
+                    _set("shap_buf_succ", buf_succ)
+                    _set("shap_buf_fail", buf_fail if res_fail is not None else None)
                     _set("shap_error", None)
                     st.success("✅ Analyse SHAP terminée.")
                 else:
-                    _set("shap_buf", None)
-                    _set("shap_error", "L'analyse SHAP n'a pas retourné de résultat. Consultez les logs pour plus de détails.")
                     st.warning("⚠️ L'analyse SHAP n'a pas pu produire de graphique.")
             except Exception as e:
-                _set("shap_buf", None)
                 _set("shap_error", str(e))
                 st.error(f"Erreur SHAP : {e}")
 
-    shap_buf = _get("shap_buf")
+    shap_buf_succ = _get("shap_buf_succ")
+    shap_buf_fail = _get("shap_buf_fail")
     shap_error = _get("shap_error")
 
-    if shap_buf is not None:
-        st.subheader("Importance des facteurs de réussite")
-        shap_buf.seek(0)
-        st.image(shap_buf, width='stretch')
-        st.caption(
-            "Ce graphique montre l'impact moyen (en valeur absolue) de chaque variable "
-            "sur la prédiction de la note. Plus la barre est longue, plus la variable est influente."
-        )
+    if shap_buf_succ is not None:
+        col_s, col_f = st.columns(2)
+        
+        with col_s:
+            st.subheader("🔵 Facteurs de Réussite")
+            st.image(shap_buf_succ, width='stretch')
+            st.caption("Variables favorisant une note élevée.")
+
+        with col_f:
+            st.subheader("🔴 Facteurs d'Échec")
+            if shap_buf_fail:
+                st.image(shap_buf_fail, width='stretch')
+                st.caption("Variables contribuant à une note faible (<10).")
+            else:
+                st.info("Aucun élève en situation d'échec dans cet échantillon pour identifier des facteurs spécifiques.")
     elif shap_error:
         st.info(f"💡 {shap_error}")
 

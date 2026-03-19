@@ -5,7 +5,7 @@ Configuration des constantes pour le projet d'analyse scolaire.
 import os
 
 # Noms des fichiers
-DATA_FILE = os.path.join('data', 'test_synthetique.csv')
+DATA_FILE = os.path.join('data', 'test_synthetique_v2.csv')
 MODEL_FILE = os.path.join('outputs', 'model_final.joblib')
 REPORT_FILE = os.path.join('outputs', 'rapport_analyse_scolaire.md')
 LOG_FILE = os.path.join('outputs', 'analysis.log')
