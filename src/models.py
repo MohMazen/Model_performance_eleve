@@ -1,5 +1,5 @@
-"""
-Entraînement des modèles, tuning et persistance.
+﻿"""
+EntraÃ®nement des modÃ¨les, tuning et persistance.
 """
 import numpy as np
 import logging
@@ -32,7 +32,7 @@ class ModelManager:
         self.subject_models = {}
 
     def prepare_pipeline(self, X):
-        """Définit le preprocesseur automatique."""
+        """DÃ©finit le preprocesseur automatique."""
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
 
@@ -47,11 +47,11 @@ class ModelManager:
         return self.preprocessor
 
     def train_regression(self, X, y, subject_name=None):
-        """Entraîne et tune un modèle de régression (XGBoost)."""
+        """EntraÃ®ne et tune un modÃ¨le de rÃ©gression (XGBoost)."""
         if subject_name:
-            logger.info(f"Entraînement du modèle de régression pour {subject_name}...")
+            logger.info(f"EntraÃ®nement du modÃ¨le de rÃ©gression pour {subject_name}...")
         else:
-            logger.info("Entraînement du modèle de régression (XGBoost)...")
+            logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (XGBoost)...")
 
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
         
@@ -68,22 +68,22 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         
         if subject_name:
             self.subject_models[subject_name] = search.best_estimator_
             return self.subject_models[subject_name]
         else:
             self.best_model_reg = search.best_estimator_
-            logger.info(f"Meilleur score R2 régression : {search.best_score_:.4f}")
+            logger.info(f"Meilleur score R2 rÃ©gression : {search.best_score_:.4f}")
             return self.best_model_reg
 
     def train_classification(self, X, y):
-        """Entraîne et tune un modèle de classification.
+        """EntraÃ®ne et tune un modÃ¨le de classification.
 
-        Utilise class_weight='balanced' pour gérer le déséquilibre des classes.
+        Utilise class_weight='balanced' pour gÃ©rer le dÃ©sÃ©quilibre des classes.
         """
-        logger.info("Entraînement du modèle de classification (Random Forest)...")
+        logger.info("EntraÃ®nement du modÃ¨le de classification (Random Forest)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -99,14 +99,14 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         self.best_model_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification : {search.best_score_:.4f}")
         return self.best_model_clf
 
     def train_nn_regression(self, X, y):
-        """Entraîne et tune un réseau de neurones pour la régression."""
-        logger.info("Entraînement du modèle de régression (Réseau de Neurones)...")
+        """EntraÃ®ne et tune un rÃ©seau de neurones pour la rÃ©gression."""
+        logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (RÃ©seau de Neurones)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -122,14 +122,14 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         self.best_model_nn_reg = search.best_estimator_
-        logger.info(f"Meilleur score R2 régression NN : {search.best_score_:.4f}")
+        logger.info(f"Meilleur score R2 rÃ©gression NN : {search.best_score_:.4f}")
         return self.best_model_nn_reg
 
     def train_nn_classification(self, X, y):
-        """Entraîne et tune un réseau de neurones pour la classification."""
-        logger.info("Entraînement du modèle de classification (Réseau de Neurones)...")
+        """EntraÃ®ne et tune un rÃ©seau de neurones pour la classification."""
+        logger.info("EntraÃ®nement du modÃ¨le de classification (RÃ©seau de Neurones)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -145,14 +145,14 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         self.best_model_nn_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification NN : {search.best_score_:.4f}")
         return self.best_model_nn_clf
 
     def train_svm_regression(self, X, y):
-        """Entraîne un modèle SVR (Support Vector Regression)."""
-        logger.info("Entraînement du modèle de régression (SVM)...")
+        """EntraÃ®ne un modÃ¨le SVR (Support Vector Regression)."""
+        logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (SVM)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -168,14 +168,14 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         self.best_model_svm_reg = search.best_estimator_
-        logger.info(f"Meilleur score R2 régression SVM : {search.best_score_:.4f}")
+        logger.info(f"Meilleur score R2 rÃ©gression SVM : {search.best_score_:.4f}")
         return self.best_model_svm_reg
 
     def train_svm_classification(self, X, y):
-        """Entraîne un modèle SVC (Support Vector Classification)."""
-        logger.info("Entraînement du modèle de classification (SVM)...")
+        """EntraÃ®ne un modÃ¨le SVC (Support Vector Classification)."""
+        logger.info("EntraÃ®nement du modÃ¨le de classification (SVM)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -190,13 +190,13 @@ class ModelManager:
         }
 
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
-        search.fit(X, y)
+        import pandas as pd; print(f'>>> Y_NAN_COUNT: {pd.Series(y).isna().sum()}'); search.fit(X, y)
         self.best_model_svm_clf = search.best_estimator_
         logger.info(f"Meilleure accuracy classification SVM : {search.best_score_:.4f}")
         return self.best_model_svm_clf
 
     def save_models(self, path=MODEL_FILE):
-        """Sauvegarde les modèles sur disque."""
+        """Sauvegarde les modÃ¨les sur disque."""
         joblib.dump({
             'reg': self.best_model_reg,
             'clf': self.best_model_clf,
@@ -208,10 +208,10 @@ class ModelManager:
             'best_clf': self.best_overall_clf,
             'subject_models': self.subject_models
         }, path)
-        logger.info(f"Modèles sauvegardés dans {path}")
+        logger.info(f"ModÃ¨les sauvegardÃ©s dans {path}")
 
     def load_models(self, path=MODEL_FILE):
-        """Charge les modèles depuis le disque."""
+        """Charge les modÃ¨les depuis le disque."""
         try:
             dict_models = joblib.load(path)
             self.best_model_reg = dict_models['reg']
@@ -223,8 +223,8 @@ class ModelManager:
             self.best_overall_reg = dict_models.get('best_reg')
             self.best_overall_clf = dict_models.get('best_clf')
             self.subject_models = dict_models.get('subject_models', {})
-            logger.info("Modèles chargés avec succès.")
+            logger.info("ModÃ¨les chargÃ©s avec succÃ¨s.")
             return True
         except (FileNotFoundError, KeyError, Exception) as e:
-            logger.warning(f"Impossible de charger les modèles depuis {path} : {e}")
+            logger.warning(f"Impossible de charger les modÃ¨les depuis {path} : {e}")
             return False
