@@ -209,12 +209,26 @@ def charger_donnees(chemin):
 
 
 def nettoyer_donnees(df):
-    """Nettoyage basique des données."""
+    """Nettoyage des données : suppression colonnes vides et imputation."""
     if df is None: return None
     df_clean = df.copy()
+    
+    # 1. Suppression des colonnes 100% vides
+    cols_vides = [c for c in df_clean.columns if df_clean[c].isna().all()]
+    if cols_vides:
+        logger.info(f"Suppression des colonnes 100% vides : {cols_vides}")
+        df_clean = df_clean.drop(columns=cols_vides)
+
+    # 2. Imputation numérique (médiane)
     for col in df_clean.select_dtypes(include=[np.number]).columns:
-        df_clean[col] = df_clean[col].fillna(df_clean[col].median())
+        if df_clean[col].isna().any():
+            df_clean[col] = df_clean[col].fillna(df_clean[col].median())
+            
+    # 3. Imputation catégorielle (mode)
     for col in df_clean.select_dtypes(include=['object', 'string']).columns:
-        if not df_clean[col].empty:
-            df_clean[col] = df_clean[col].fillna(df_clean[col].mode()[0] if not df_clean[col].mode().empty else "")
+        if df_clean[col].isna().any():
+            modes = df_clean[col].mode()
+            fill_val = modes[0] if not modes.empty else ""
+            df_clean[col] = df_clean[col].fillna(fill_val)
+            
     return df_clean
