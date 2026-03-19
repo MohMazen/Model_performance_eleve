@@ -27,15 +27,14 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     np.random.seed(42)
 
     if classes_selectionnees is None:
-        classes_selectionnees = ['4ème', '3ème']
+        classes_selectionnees = ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'terminale']
     
-    # Mapping exact des noms de classes du questionnaire (Select HTML)
-    map_classes = {
+    # On s'assure d'utiliser les valeurs internes du questionnaire (6eme, 1ere, etc.)
+    map_classes_reverse = {
         'Sixième': '6eme', 'Cinquième': '5eme', 'Quatrième': '4eme', 
         'Troisième': '3eme', 'Seconde': '2nde', 'Première': '1ere', 'Terminale': 'terminale'
     }
-    # On s'assure d'utiliser les valeurs internes du questionnaire
-    classes_values = [map_classes.get(c, c) for c in classes_selectionnees]
+    classes_values = [map_classes_reverse.get(c, c) for c in classes_selectionnees]
 
     data = {} # type: dict
 
@@ -57,13 +56,16 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     for m in matieres:
         data[f'Interet_{m}'] = np.random.randint(0, 11, n_eleves)
     
-    # Pour simplifier, on laisse les spécialités vides ou avec des valeurs par défaut
+    # Spécialités
+    spe_possibles = ['Maths', 'Physique-Chimie', 'SVT', 'SES', 'HLP', 'HGGSP', 'NSI', 'LLCE']
     for i in range(1, 4):
-        data[f'Specialite1ere_{i}_nom'] = ""
-        data[f'Specialite1ere_{i}_interet'] = 5
+        data[f'Specialite1ere_{i}_nom'] = [""] * n_eleves
+        data[f'Specialite1ere_{i}_interet'] = [0] * n_eleves
+        data[f'note_specialite1ere_{i}'] = [np.nan] * n_eleves
     for i in range(1, 3):
-        data[f'SpecialiteTerm_{i}_nom'] = ""
-        data[f'SpecialiteTerm_{i}_interet'] = 5
+        data[f'SpecialiteTerm_{i}_nom'] = [""] * n_eleves
+        data[f'SpecialiteTerm_{i}_interet'] = [0] * n_eleves
+        data[f'note_specialiteterm_{i}'] = [np.nan] * n_eleves
         
     data['Motivation_famille'] = np.random.randint(0, 11, n_eleves)
     data['Motivation_recompenses'] = np.random.randint(0, 11, n_eleves)
@@ -124,43 +126,71 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     data['Temps_libre'] = np.random.randint(0, 6, n_eleves)
     data['Taches_menageres'] = np.random.choice(['aucune', 'peu', 'moyen', 'beaucoup'], n_eleves)
     data['Heures_garde_freres_soeurs'] = np.random.randint(0, 5, n_eleves)
-    data['Soutien_matieres'] = ""
-    data['Heures_soutien_francais'] = 0
-    data['Heures_soutien_maths'] = 0
-    data['Heures_soutien_sciences'] = 0
-    data['Heures_soutien_anglais'] = 0
-    data['Heures_soutien_histoire_geo'] = 0
+    data['Soutien_matieres'] = [""] * n_eleves
+    data['Heures_soutien_francais'] = [0] * n_eleves
+    data['Heures_soutien_maths'] = [0] * n_eleves
+    data['Heures_soutien_sciences'] = [0] * n_eleves
+    data['Heures_soutien_anglais'] = [0] * n_eleves
+    data['Heures_soutien_histoire_geo'] = [0] * n_eleves
     data['Abonnement_plateforme'] = np.random.choice(['oui', 'non'], n_eleves)
-    data['Nom_plateforme'] = ""
+    data['Nom_plateforme'] = [""] * n_eleves
     data['Frequence_mediatheque'] = np.random.choice(['jamais', 'rarement', 'parfois', 'souvent'], n_eleves)
 
-    # On convertit toutes les clés en minuscules pour assurer l'insensibilité à la casse
+    # --- CALCUL DES CIBLES ET SPÉCIALITÉS ---
+    data['note_francais'] = [0.0] * n_eleves
+    data['note_maths'] = [0.0] * n_eleves
+    data['note_histoire_geo'] = [0.0] * n_eleves
+    data['note_sciences'] = [0.0] * n_eleves
+
+    for i in range(n_eleves):
+        classe = data['Classe'][i]
+        
+        # Attribution des spécialités selon la classe
+        if classe == '1ere':
+            spes = np.random.choice(spe_possibles, 3, replace=False)
+            for j, s in enumerate(spes):
+                data[f'Specialite1ere_{j+1}_nom'][i] = s
+                data[f'Specialite1ere_{j+1}_interet'][i] = np.random.randint(0, 11)
+        elif classe == 'terminale':
+            spes = np.random.choice(spe_possibles, 2, replace=False)
+            for j, s in enumerate(spes):
+                data[f'SpecialiteTerm_{j+1}_nom'][i] = s
+                data[f'SpecialiteTerm_{j+1}_interet'][i] = np.random.randint(0, 11)
+
+        # Signal déterministe pour les notes
+        bonus = 0
+        bonus += data['Heures_etude_soir'][i] * 1.5
+        bonus += (data['Interet_maths'][i] + data['Interet_francais'][i]) * 0.4
+        bonus -= (data['Heures_jeux_video'][i] + data['Heures_reseaux_sociaux'][i]) * 0.8
+        bonus -= data['Stress_personnel'][i] * 1.0
+        bonus += data['Heures_sommeil'][i] * 0.3
+        bonus += data['Organisation'][i] * 0.2
+        bonus += data['Perseverance'][i] * 0.5
+        
+        if data['Activite_sportive'][i] == 'oui': bonus += 1.0
+        if data['Duree_trajet_AR_min'][i] > 60: bonus -= 1.0
+
+        bonus_centre = bonus - 7.5
+        
+        # Notes de base
+        data['note_francais'][i] = np.clip(np.random.normal(11, 2.0) + bonus_centre, 0, 20)
+        data['note_maths'][i] = np.clip(np.random.normal(10, 2.5) + bonus_centre, 0, 20)
+        data['note_histoire_geo'][i] = np.clip(np.random.normal(12, 2.0) + bonus_centre, 0, 20)
+        data['note_sciences'][i] = np.clip(np.random.normal(11, 2.5) + bonus_centre, 0, 20)
+        
+        # Notes de spécialités (Lycée uniquement)
+        if classe == '1ere':
+            for j in range(1, 4):
+                data[f'note_specialite1ere_{j}'][i] = np.clip(np.random.normal(12, 3.0) + bonus_centre, 0, 20)
+        elif classe == 'terminale':
+            for j in range(1, 3):
+                data[f'note_specialiteterm_{j}'][i] = np.clip(np.random.normal(12, 3.0) + bonus_centre, 0, 20)
+
+    # Conversion finale en DataFrame
     data = {k.lower(): v for k, v in data.items()}
     df = pd.DataFrame(data)
 
-    # --- CALCUL DES CIBLES RÉALISTES ---
-    for i in range(n_eleves):
-        bonus = 0
-        # Renforcement du signal déterministe pour améliorer le R2
-        bonus += df.loc[i, 'heures_etude_soir'] * 1.5  # Fort impact de l'étude
-        bonus += (df.loc[i, 'interet_maths'] + df.loc[i, 'interet_francais']) * 0.4
-        bonus -= (df.loc[i, 'heures_jeux_video'] + df.loc[i, 'heures_reseaux_sociaux']) * 0.8
-        bonus -= df.loc[i, 'stress_personnel'] * 1.0
-        bonus += df.loc[i, 'heures_sommeil'] * 0.3
-        bonus += df.loc[i, 'organisation'] * 0.2
-        bonus += df.loc[i, 'perseverance'] * 0.5
-        
-        if df.loc[i, 'activite_sportive'] == 'oui': bonus += 1.0
-        if df.loc[i, 'duree_trajet_ar_min'] > 60: bonus -= 1.0
-
-        # Réduction de l'écart-type pour que le signal soit plus clair
-        # Note de base centrée sur 10-12, avec bonus centré pour avoir des notes sous la moyenne
-        bonus_centre = bonus - 7.5
-        df.loc[i, 'note_francais'] = np.clip(np.random.normal(11, 2.0) + bonus_centre, 0, 20)
-        df.loc[i, 'note_maths'] = np.clip(np.random.normal(10, 2.5) + bonus_centre, 0, 20)
-        df.loc[i, 'note_histoire_geo'] = np.clip(np.random.normal(12, 2.0) + bonus_centre, 0, 20)
-        df.loc[i, 'note_sciences'] = np.clip(np.random.normal(11, 2.5) + bonus_centre, 0, 20)
-
+    # Calcul de la moyenne sur les colonnes de notes (skipna=True par défaut)
     df['note_moyenne'] = df[GRADE_COLUMNS].mean(axis=1)
     return df
 

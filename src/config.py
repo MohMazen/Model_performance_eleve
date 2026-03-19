@@ -23,7 +23,11 @@ SEUIL_REUSSITE = 10
 ID_COLUMNS = [c.lower() for c in ['Nom', 'Prenom', 'Adresse', 'Etablissement', 'Nom_plateforme', 'Autre_etat_psy', 'Specialite1ere_1_nom', 'Specialite1ere_2_nom', 'Specialite1ere_3_nom', 'SpecialiteTerm_1_nom', 'SpecialiteTerm_2_nom', 'Soutien_matieres', 'Etat_psychologique']]
 
 # Colonnes de notes (pour le calcul de la moyenne)
-GRADE_COLUMNS = ['note_francais', 'note_maths', 'note_histoire_geo', 'note_sciences']
+GRADE_COLUMNS = [
+    'note_francais', 'note_maths', 'note_histoire_geo', 'note_sciences',
+    'note_specialite1ere_1', 'note_specialite1ere_2', 'note_specialite1ere_3',
+    'note_specialiteterm_1', 'note_specialiteterm_2'
+]
 
 # Colonnes à exclure avant modélisation (Identité + Cibles directes)
 COLS_TO_DROP = ID_COLUMNS + GRADE_COLUMNS + ['heure_coucher', 'heure_lever']

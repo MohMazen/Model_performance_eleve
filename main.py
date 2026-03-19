@@ -39,7 +39,7 @@ def main():
         # Vérifier la compatibilité du schéma (les colonnes attendues existent-elles ?)
         required_cols = ['activite_sportive', 'heures_etude_soir', 'heures_jeux_video',
                          'heures_sommeil', 'stress_personnel', 'perseverance', 'heures_reseaux_sociaux',
-                         'heures_streaming']
+                         'heures_streaming', 'specialite1ere_1_nom', 'note_specialite1ere_1']
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
             logger.warning(f"Schéma CSV incompatible (colonnes manquantes : {missing}). Régénération...")
