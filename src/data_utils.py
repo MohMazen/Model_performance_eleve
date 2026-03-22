@@ -196,12 +196,13 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
 
 
 def charger_donnees(chemin):
-    """Charge les données depuis CSV."""
+    """Charge les données depuis CSV avec détection automatique du séparateur."""
     try:
-        df = pd.read_csv(chemin, sep=';', encoding='utf-8-sig')
+        # csv.Sniffer() ou pandas sep=None
+        df = pd.read_csv(chemin, sep=None, engine='python', encoding='utf-8-sig')
         # On passe toutes les colonnes en minuscules pour l'insensibilité à la casse
         df.columns = [c.lower() for c in df.columns]
-        logger.info(f"Données chargées : {df.shape}")
+        logger.info(f"Données chargées ({df.shape[0]} lignes) depuis {chemin} (séparateur détecté)")
         return df
     except Exception as e:
         logger.error(f"Erreur de chargement de {chemin}: {e}")

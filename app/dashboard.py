@@ -106,14 +106,15 @@ if page == PAGES[0]:
 
     with col_upload:
         st.subheader("Charger un fichier CSV")
-        uploaded = st.file_uploader("Fichier CSV (séparateur ';')", type=["csv"])
+        uploaded = st.file_uploader("Fichier CSV (séparateur ',' ou ';')", type=["csv"])
         
         # On ne reset que si un NOUVEAU fichier est chargé
         last_uploaded_name = _get("last_uploaded_name")
         
         if uploaded is not None and uploaded.name != last_uploaded_name:
             try:
-                df_up = pd.read_csv(uploaded, sep=';', encoding='utf-8-sig')
+                # pandas sep=None détecte automatiquement , ou ;
+                df_up = pd.read_csv(uploaded, sep=None, engine='python', encoding='utf-8-sig')
                 df_up.columns = [c.lower() for c in df_up.columns]
                 _set("df_raw", df_up)
                 _set("df_clean", None)
