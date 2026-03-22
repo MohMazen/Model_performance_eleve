@@ -331,9 +331,19 @@ elif page == PAGES[2]:
                 y_reg = df_feat[target_reg]
                 y_clf = df_feat[TARGET_CLF]
 
+                # Sécurité : Vérifier qu'il y a bien au moins 2 classes pour la classification
+                if len(np.unique(y_clf)) < 2:
+                    st.error("⚠️ **Impossible d'entraîner la classification** : La variable cible ne contient qu'une seule classe. Cela signifie que le seuil de réussite choisi fait que tous les élèves réussissent (ou échouent). Veuillez ajuster le seuil.")
+                    st.stop()
+
                 X_train, X_test, yr_train, yr_test, yc_train, yc_test = train_test_split(
                     X, y_reg, y_clf, test_size=0.2, random_state=42
                 )
+                
+                # Double vérification après le split
+                if len(np.unique(yc_train)) < 2:
+                    st.error("⚠️ Le jeu d'entraînement ne contient qu'une seule classe après séparation. L'échantillon est trop déséquilibré. Ajustez le seuil.")
+                    st.stop()
 
                 mm = ModelManager()
                 mm.prepare_pipeline(X_train)
