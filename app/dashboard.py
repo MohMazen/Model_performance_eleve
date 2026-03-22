@@ -1,4 +1,4 @@
-,!l  bj sw """
+"""
 Dashboard Streamlit complet - Analyse Prédictive des Performances Scolaires.
 6 pages : Données, Preprocessing, Modélisation, Prédictions, Explicabilité, Rapport.
 """
