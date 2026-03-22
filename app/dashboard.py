@@ -1,4 +1,4 @@
-"""
+,!l  bj sw """
 Dashboard Streamlit complet - Analyse Prédictive des Performances Scolaires.
 6 pages : Données, Preprocessing, Modélisation, Prédictions, Explicabilité, Rapport.
 """
@@ -99,6 +99,7 @@ if page == PAGES[0]:
                 with st.spinner("Génération en cours…"):
                     df = generer_donnees_synthetiques(int(n_eleves), classes_selectionnees=classes_sel)
                 _set("df_raw", df)
+                _set("data_source", "synthetic")
                 _set("df_clean", None)
                 _set("df_feat", None)
                 _set("models", None)
@@ -117,6 +118,7 @@ if page == PAGES[0]:
                 df_up = pd.read_csv(uploaded, sep=None, engine='python', encoding='utf-8-sig')
                 df_up.columns = [c.lower() for c in df_up.columns]
                 _set("df_raw", df_up)
+                _set("data_source", "uploaded")
                 _set("df_clean", None)
                 _set("df_feat", None)
                 _set("models", None)
@@ -294,12 +296,39 @@ elif page == PAGES[2]:
     model_name = ", ".join(selected_models) if selected_models else ""
     _set("model_name", model_name)
 
+    # Support dynamique du Target pour les fichiers uploadés
+    data_source = _get("data_source", "synthetic")
+    
+    if data_source == "uploaded":
+        num_cols = df_feat.select_dtypes(include=[np.number]).columns.tolist()
+        default_target = TARGET_REG if TARGET_REG in num_cols else (num_cols[0] if num_cols else None)
+        
+        st.info("💡 Données téléchargées détectées. Veuillez confirmer les paramètres cibles.")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            target_reg = st.selectbox("Variable à prédire (Régression)", num_cols, index=num_cols.index(default_target) if default_target in num_cols else 0)
+        with col_t2:
+            threshold = st.number_input("Seuil de réussite (pour Classification)", value=10.0, step=0.5)
+            
+        # Création dynamique de la cible de classification si nécessaire
+        if target_reg:
+            df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
+    else:
+        target_reg = TARGET_REG
+
     if st.button("🚀 Entraîner les modèles"):
         with st.spinner("Entraînement en cours… (peut prendre quelques minutes)"):
             try:
-                cols_drop = [c for c in COLS_TO_DROP if c in df_feat.columns]
-                X = df_feat.drop(columns=cols_drop + [TARGET_REG, TARGET_CLF])
-                y_reg = df_feat[TARGET_REG]
+                if data_source == "synthetic":
+                    cols_drop = [c for c in COLS_TO_DROP if c in df_feat.columns]
+                else:
+                    # Pour les données uploadées, on ne drop que les identifiants classiques
+                    common_ids = ['id', 'nom', 'prenom', 'prénom', 'adresse', 'mail']
+                    cols_drop = [c for c in df_feat.columns if c.lower() in common_ids]
+                
+                # S'assurer de drop les deux cibles
+                X = df_feat.drop(columns=[c for c in cols_drop if c in df_feat.columns] + [target_reg, TARGET_CLF], errors='ignore')
+                y_reg = df_feat[target_reg]
                 y_clf = df_feat[TARGET_CLF]
 
                 X_train, X_test, yr_train, yr_test, yc_train, yc_test = train_test_split(
