@@ -150,56 +150,59 @@ if page == PAGES[0]:
         st.markdown("---")
         st.subheader("Visualisations des données")
 
-        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        cat_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
+        cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms', 'Nom', 'Prenom', 'Adresse', 'id', 'mail']
+        all_cols = [c for c in df.columns if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
 
-        cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms', 'Nom', 'Prenom', 'Adresse']
-        num_cols = [c for c in num_cols if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
-        cat_cols = [c for c in cat_cols if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
-
-        if num_cols:
-            st.markdown("#### Variables numériques")
-            # Utiliser une palette de couleurs prédéfinie
+        if all_cols:
             palette = px.colors.qualitative.Prism
-
-            for i in range(0, len(num_cols), 2):
+            for i in range(0, len(all_cols), 2):
                 cols = st.columns(2)
-                for j, col_name in enumerate(num_cols[i:i + 2]):
-                    # Calculer l'index global pour choisir la couleur
+                for j, col_name in enumerate(all_cols[i:i + 2]):
                     idx = i + j
                     couleur = palette[idx % len(palette)]
-
                     with cols[j]:
-                        fig = px.histogram(
-                            df, x=col_name,
-                            color_discrete_sequence=[couleur],
-                            title=f"Distribution de {col_name}",
-                            labels={col_name: col_name, "count": "Nombre"},
-                        )
-                        # Ajoute une bordure blanche pour bien séparer les barres de l'histogramme
-                        fig.update_traces(marker_line_width=1, marker_line_color="white")
-                        st.plotly_chart(fig, width='stretch')
-
-        if cat_cols:
-            st.markdown("#### Variables catégorielles")
-            for i in range(0, len(cat_cols), 2):
-                cols = st.columns(2)
-                for j, col_name in enumerate(cat_cols[i:i + 2]):
-                    with cols[j]:
-                        vc = df[col_name].value_counts().reset_index(name="count")
-                        # Trier par heure si c'est une distribution horaire
-                        if col_name in ['heure_lever', 'heure_coucher']:
-                            vc = vc.sort_values(by=col_name)
+                        unique_vals = df[col_name].nunique()
+                        # Ligne pour les dates
+                        if pd.api.types.is_datetime64_any_dtype(df[col_name]) or 'date' in str(col_name).lower():
+                            vc = df[col_name].value_counts().sort_index().reset_index(name="count")
+                            fig = px.line(
+                                vc, x=col_name, y="count",
+                                title=f"Évolution de {col_name}",
+                                labels={col_name: col_name, "count": "Nombre"},
+                                color_discrete_sequence=[couleur]
+                            )
+                        # Histogramme pour les valeurs numériques continues ou avec beaucoup de valeurs uniques
+                        elif pd.api.types.is_numeric_dtype(df[col_name]) and unique_vals > 10:
+                            fig = px.histogram(
+                                df, x=col_name,
+                                color_discrete_sequence=[couleur],
+                                title=f"Distribution de {col_name}",
+                                labels={col_name: col_name, "count": "Nombre"}
+                            )
+                            fig.update_traces(marker_line_width=1, marker_line_color="white")
+                        # Camembert (Pie) pour les catégories avec peu de valeurs uniques
+                        elif unique_vals <= 10:
+                            vc = df[col_name].value_counts().reset_index(name="count")
+                            fig = px.pie(
+                                vc, names=col_name, values="count",
+                                title=f"Répartition de {col_name}",
+                                hole=0.3
+                            )
+                        # Bar chart pour les catégories avec plus de 10 valeurs
                         else:
-                            vc = vc.sort_values(by="count", ascending=False).head(20)
-                            
-                        fig = px.bar(
-                            vc, x=col_name, y="count",
-                            color="count",
-                            color_continuous_scale='Plasma',
-                            title=f"Distribution de {col_name}",
-                            labels={col_name: col_name, "count": "Nombre"},
-                        )
+                            vc = df[col_name].value_counts().reset_index(name="count")
+                            if col_name in ['heure_lever', 'heure_coucher']:
+                                vc = vc.sort_values(by=col_name)
+                            else:
+                                vc = vc.sort_values(by="count", ascending=False).head(20)
+                                
+                            fig = px.bar(
+                                vc, x=col_name, y="count",
+                                color="count",
+                                color_continuous_scale='Plasma',
+                                title=f"Distribution de {col_name}",
+                                labels={col_name: col_name, "count": "Nombre"}
+                            )
                         st.plotly_chart(fig, width='stretch')
     else:
         st.info("Générez des données synthétiques ou chargez un fichier CSV pour commencer.")
@@ -220,6 +223,31 @@ elif page == PAGES[1]:
 
     col1, col2 = st.columns(2)
 
+    data_source = _get("data_source", "synthetic")
+    
+    if data_source == "uploaded":
+        st.markdown("### 🎯 Définition de la Cible (Target)")
+        df_cols_target = _get("df_clean") if _get("df_clean") is not None else df
+        num_cols_tgt = df_cols_target.select_dtypes(include=[np.number]).columns.tolist()
+        from src.config import TARGET_REG, SEUIL_REUSSITE
+        default_target = TARGET_REG if TARGET_REG in num_cols_tgt else (num_cols_tgt[0] if num_cols_tgt else None)
+        
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            target_reg = st.selectbox("Sélectionnez la variable cible (Régression)", num_cols_tgt, index=num_cols_tgt.index(default_target) if default_target in num_cols_tgt else 0)
+        with col_t2:
+            threshold = st.number_input("Seuil de réussite (Classification)", value=10.0, step=0.5)
+        
+        _set("target_reg", target_reg)
+        _set("seuil_reussite", threshold)
+    else:
+        from src.config import TARGET_REG, SEUIL_REUSSITE
+        _set("target_reg", TARGET_REG)
+        _set("seuil_reussite", SEUIL_REUSSITE)
+
+    st.markdown("---")
+    st.markdown("### Traitements")
+    
     with col1:
         if st.button("🧹 Nettoyer les données"):
             df_clean = nettoyer_donnees(df)
@@ -231,10 +259,21 @@ elif page == PAGES[1]:
         if st.button("⚙️ Feature Engineering"):
             df_clean_tmp = _get("df_clean")
             df_base = df_clean_tmp if df_clean_tmp is not None else df
-            df_h = prenttoyer_horaires(df_base)
-            df_feat = add_advanced_features(df_h)
-            _set("df_feat", df_feat)
-            st.success("✅ Features avancées créées.")
+            
+            if data_source == "synthetic":
+                df_h = prenttoyer_horaires(df_base)
+                df_feat = add_advanced_features(df_h)
+                _set("df_feat", df_feat)
+                st.success("✅ Features avancées créées.")
+            else:
+                target_reg = _get("target_reg")
+                threshold = _get("seuil_reussite")
+                df_feat = df_base.copy()
+                from src.config import TARGET_CLF
+                if target_reg and target_reg in df_feat.columns:
+                    df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
+                _set("df_feat", df_feat)
+                st.success(f"✅ Features prêtes (Cible définie sur '{target_reg}').")
 
     df_clean = _get("df_clean")
     df_feat = _get("df_feat")
@@ -296,25 +335,10 @@ elif page == PAGES[2]:
     model_name = ", ".join(selected_models) if selected_models else ""
     _set("model_name", model_name)
 
-    # Support dynamique du Target pour les fichiers uploadés
     data_source = _get("data_source", "synthetic")
-    
-    if data_source == "uploaded":
-        num_cols = df_feat.select_dtypes(include=[np.number]).columns.tolist()
-        default_target = TARGET_REG if TARGET_REG in num_cols else (num_cols[0] if num_cols else None)
-        
-        st.info("💡 Données téléchargées détectées. Veuillez confirmer les paramètres cibles.")
-        col_t1, col_t2 = st.columns(2)
-        with col_t1:
-            target_reg = st.selectbox("Variable à prédire (Régression)", num_cols, index=num_cols.index(default_target) if default_target in num_cols else 0)
-        with col_t2:
-            threshold = st.number_input("Seuil de réussite (pour Classification)", value=10.0, step=0.5)
-            
-        # Création dynamique de la cible de classification si nécessaire
-        if target_reg:
-            df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
-    else:
-        target_reg = TARGET_REG
+    target_reg = _get("target_reg")
+    threshold = _get("seuil_reussite")
+    from src.config import TARGET_CLF
 
     if st.button("🚀 Entraîner les modèles"):
         with st.spinner("Entraînement en cours… (peut prendre quelques minutes)"):
@@ -665,24 +689,40 @@ elif page == PAGES[3]:
     with tab_ind:
         st.subheader("Saisir les paramètres d'un élève")
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            heures_etude = st.slider("Heures d'étude / soir", 0.0, 10.0, 3.0, 0.5)
-            interet_maths = st.slider("Intérêt pour les Maths (0-10)", 0, 10, 7)
-            heures_sommeil = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
-            stress_personnel = st.slider("Niveau de stress personnel (0-4)", 0, 4, 1)
-            perseverance = st.slider("Niveau de persévérance (1-5)", 1, 5, 3)
+        data_source = _get("data_source", "synthetic")
+        input_data = {}
 
-        with col2:
-            absences_sim = st.number_input("Absences (simulées)", 0, 30, 2)
-            heures_jeux = st.slider("Heures jeux vidéo / jour", 0.0, 8.0, 1.0, 0.5)
-            confiance_soi = st.slider("Confiance en soi (1-10)", 1, 10, 7)
-            estime_soi = st.slider("Estime de soi (1-10)", 1, 10, 7)
+        if data_source == "synthetic":
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                input_data['heures_etude_soir'] = st.slider("Heures d'étude / soir", 0.0, 10.0, 3.0, 0.5)
+                input_data['interet_maths'] = st.slider("Intérêt pour les Maths (0-10)", 0, 10, 7)
+                input_data['heures_sommeil'] = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
+                input_data['stress_personnel'] = st.slider("Niveau de stress personnel (0-4)", 0, 4, 1)
+                input_data['perseverance'] = st.slider("Niveau de persévérance (1-5)", 1, 5, 3)
 
-        with col3:
-            activite_sport = st.selectbox("Activité sportive", ["oui", "non"])
-            classe = st.selectbox("Classe", ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale"])
-            type_etab = st.selectbox("Type d'établissement", ["Public", "Privé"])
+            with col2:
+                input_data['heures_jeux_video'] = st.slider("Heures jeux vidéo / jour", 0.0, 8.0, 1.0, 0.5)
+                input_data['confiance_soi'] = st.slider("Confiance en soi (1-10)", 1, 10, 7)
+                input_data['estime_soi'] = st.slider("Estime de soi (1-10)", 1, 10, 7)
+
+            with col3:
+                input_data['activite_sportive'] = st.selectbox("Activité sportive", ["oui", "non"])
+                input_data['classe'] = st.selectbox("Classe", ["6eme", "5eme", "4eme", "3eme", "2nde", "1ere", "terminale"])
+                input_data['type_etab'] = st.selectbox("Type d'établissement", ["Public", "Privé"])
+
+        else:
+            st.info("Saisie dynamique des paramètres pour le modèle.")
+            cols = st.columns(3)
+            for i, col in enumerate(feature_columns):
+                with cols[i % 3]:
+                    if pd.api.types.is_numeric_dtype(df_feat[col]):
+                        val = float(df_feat[col].median()) if not df_feat[col].isnull().all() else 0.0
+                        input_data[col] = st.number_input(col, value=val, key=f"inp_{col}")
+                    else:
+                        options = [x for x in df_feat[col].dropna().unique() if str(x) != ""]
+                        if not options: options = ["Inconnu"]
+                        input_data[col] = st.selectbox(col, options=options, key=f"inp_{col}")
 
         if st.button("🔮 Prédire"):
             # Construire un DataFrame à partir d'un échantillon pour avoir toutes les colonnes
@@ -693,24 +733,23 @@ elif page == PAGES[3]:
                 st.stop()
 
             # Mise à jour des valeurs avec la saisie utilisateur
-            input_row['heures_etude_soir'] = heures_etude
-            input_row['interet_maths'] = interet_maths
-            input_row['heures_sommeil'] = heures_sommeil
-            input_row['stress_personnel'] = stress_personnel
-            input_row['perseverance'] = perseverance
-            input_row['activite_sportive'] = activite_sport
-            input_row['classe'] = classe
-            input_row['heures_jeux_video'] = heures_jeux
-            input_row['confiance_soi'] = confiance_soi
-            input_row['estime_soi'] = estime_soi
+            for k, v in input_data.items():
+                input_row[k] = v
             
-            # Recalculer les features dérivées via la fonction centrale
-            input_row = add_advanced_features(input_row)
+            if data_source == "synthetic":
+                # Recalculer les features dérivées via la fonction centrale
+                input_row = add_advanced_features(input_row)
 
+            target_reg = _get("target_reg", TARGET_REG)
             # Conserver uniquement les colonnes attendues par le modèle
             cols_drop = [c for c in COLS_TO_DROP if c in input_row.columns]
-            targets = [c for c in [TARGET_REG, TARGET_CLF] if c in input_row.columns]
-            X_input = input_row.drop(columns=cols_drop + targets)
+            targets = [c for c in [target_reg, TARGET_CLF] if c in input_row.columns]
+            X_input = input_row.drop(columns=cols_drop + targets, errors='ignore')
+            
+            missing_cols = set(feature_columns) - set(X_input.columns)
+            for mcol in missing_cols:
+                X_input[mcol] = 0
+                
             X_input = X_input[feature_columns]
 
             note_pred = model_reg.predict(X_input)[0]
@@ -750,12 +789,13 @@ elif page == PAGES[3]:
             with st.spinner("Calcul en cours…"):
                 try:
                     cols_drop = [c for c in COLS_TO_DROP if c in df_feat.columns]
-                    X_all = df_feat.drop(columns=cols_drop + [TARGET_REG, TARGET_CLF])
+                    target_reg = _get("target_reg", TARGET_REG)
+                    X_all = df_feat.drop(columns=cols_drop + [target_reg, TARGET_CLF], errors='ignore')
                     X_all = X_all[feature_columns]
 
                     # Identification dynamique des colonnes d'identité pour éviter les erreurs de casse
-                    ident_cols = [c for c in df_feat.columns if str(c).lower() in ['nom', 'prenom', 'prénom']]
-                    cols_to_select = ident_cols + [TARGET_REG]
+                    ident_cols = [c for c in df_feat.columns if str(c).lower() in ['nom', 'prenom', 'prénom', 'id', 'mail']]
+                    cols_to_select = ident_cols + [target_reg] if target_reg in df_feat.columns else ident_cols
                     df_preds = df_feat[cols_to_select].copy()
                     df_preds['Note Prédite (Moy)'] = model_reg.predict(X_all)
                     
@@ -764,7 +804,8 @@ elif page == PAGES[3]:
                             col_label = f"Prédit_{sub_name.replace('note_', '')}"
                             df_preds[col_label] = sub_model.predict(X_all)
                     
-                    df_preds['Écart'] = df_preds['Note Prédite (Moy)'] - df_preds[TARGET_REG]
+                    if target_reg in df_preds.columns:
+                        df_preds['Écart'] = df_preds['Note Prédite (Moy)'] - df_preds[target_reg]
                     
                     st.dataframe(df_preds, width='stretch')
                     
@@ -803,10 +844,14 @@ elif page == PAGES[4]:
                 
                 # 2. Facteurs d'échec
                 buf_fail = io.BytesIO()
+                target_reg = _get("target_reg", TARGET_REG)
                 # On utilise les notes réelles du test pour filtrer les échecs dans l'analyse SHAP
                 df_feat = _get("df_feat")
-                y_test_real = df_feat.loc[X_test.index, TARGET_REG]
-                res_fail = generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_test_real.iloc[:sample_size], buf=buf_fail)
+                if target_reg in df_feat.columns:
+                    y_test_real = df_feat.loc[X_test.index, target_reg]
+                    res_fail = generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_test_real.iloc[:sample_size], buf=buf_fail)
+                else:
+                    res_fail = None
                 buf_fail.seek(0)
 
                 if res_succ is not None:
@@ -864,18 +909,24 @@ elif page == PAGES[5]:
 
     if st.button("📄 Générer le rapport"):
         model_name = _get("model_name")
+        target_reg = _get("target_reg", TARGET_REG)
+        threshold = _get("seuil_reussite", SEUIL_REUSSITE)
         rapport = generer_rapport_markdown(df_feat, metrics_reg, metrics_clf, path=None,
                                            metrics_nn_reg=metrics_nn_reg,
                                            metrics_nn_clf=metrics_nn_clf,
                                            metrics_svm_reg=metrics_svm_reg,
                                            metrics_svm_clf=metrics_svm_clf,
                                            selected_features=selected_features,
-                                           model_name=model_name)
+                                           model_name=model_name,
+                                           target_col=target_reg, threshold=threshold)
         _set("rapport_md", rapport)
         st.success("✅ Rapport généré.")
 
     rapport_md = _get("rapport_md")
     if rapport_md is not None:
+        target_reg = _get("target_reg", TARGET_REG)
+        threshold = _get("seuil_reussite", SEUIL_REUSSITE)
+        
         st.markdown("---")
         st.markdown(rapport_md)
 
@@ -886,15 +937,16 @@ elif page == PAGES[5]:
             mime="text/markdown"
         )
 
-        st.markdown("---")
-        st.subheader("Distribution des notes moyennes")
-        fig = px.histogram(
-            df_feat,
-            x='note_moyenne',
-            color_discrete_sequence=['#ff7f0e'],
-            nbins=25,
-            title="Distribution des notes moyennes",
-            labels={'note_moyenne': 'Note moyenne / 20', 'count': 'Nombre d\'élèves'},
-        )
-        fig.add_vline(x=10, line_dash="dash", line_color="red", annotation_text="Seuil réussite (10)")
-        st.plotly_chart(fig, width='stretch')
+        if target_reg in df_feat.columns:
+            st.markdown("---")
+            st.subheader(f"Distribution de {target_reg}")
+            fig = px.histogram(
+                df_feat,
+                x=target_reg,
+                color_discrete_sequence=['#ff7f0e'],
+                nbins=25,
+                title=f"Distribution de {target_reg}",
+                labels={target_reg: target_reg, 'count': 'Nombre d\'élèves'},
+            )
+            fig.add_vline(x=threshold, line_dash="dash", line_color="red", annotation_text=f"Seuil réussite ({threshold})")
+            st.plotly_chart(fig, width='stretch')
