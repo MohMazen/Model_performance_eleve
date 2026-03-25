@@ -1,54 +1,51 @@
 import pandas as pd
 import numpy as np
-import os
-import sys
+from src.features import get_column_mapping, add_advanced_features, prenttoyer_horaires
 
-# Ensure project root is in path
-sys.path.append(os.getcwd())
-
-from src.features import add_advanced_features
-from src.models import ModelManager
-
-# Target names from src.config
-TARGET_CLF = 'reussite'
-
-def test_dynamic_pipeline():
-    # 1. Create a non-school related CSV
-    np.random.seed(42)
+def test_dynamic_features():
+    # 1. Création d'un DataFrame simulant un CSV uploadé avec des noms différents
     data = {
-        'feature_alpha': np.random.rand(100),
-        'feature_beta': np.random.rand(100),
-        'my_custom_target': np.random.rand(100) * 20,
-        'id_to_drop': range(100)
+        'Nom_Eleve': ['Alice', 'Bob'],
+        'Temps_Sommeil': [8.0, 6.0],
+        'Gaming_Hours': [1.0, 4.0],
+        'Study_Time': [2.0, 1.0],
+        'Sport_User': ['oui', 'non'],
+        'Moyenne_Generale': [15.5, 9.5],
+        'Bedtime': ['22h30', '23:45']
     }
     df = pd.DataFrame(data)
     
-    print("Testing add_advanced_features on custom data...")
-    # Should not crash and should return reasonably
-    df_feat = add_advanced_features(df)
-    print("Columns after feature engineering:", df_feat.columns.tolist())
+    print("Columns:", df.columns.tolist())
     
-    # 2. Test ModelManager with this data
-    print("Testing ModelManager on custom data...")
-    mm = ModelManager()
+    # 2. Test de la détection automatique
+    mapping = get_column_mapping(df.columns)
+    print("Detected Mapping:", mapping)
     
-    # Simulate the logic in dashboard.py for uploaded data
-    target_reg = 'my_custom_target'
-    df_feat[TARGET_CLF] = (df_feat[target_reg] >= 10).astype(int)
+    # Vérifications attendues
+    assert mapping['sommeil'] == 'Temps_Sommeil'
+    assert mapping['jeux_video'] == 'Gaming_Hours'
+    assert mapping['etude'] == 'Study_Time'
+    assert mapping['sport'] == 'Sport_User'
+    assert mapping['note_moyenne'] == 'Moyenne_Generale'
+    assert mapping['heure_coucher'] == 'Bedtime'
     
-    cols_drop = ['id_to_drop']
-    X = df_feat.drop(columns=cols_drop + [target_reg, TARGET_CLF])
-    y_reg = df_feat[target_reg]
+    # 3. Test du feature engineering
+    df_h = prenttoyer_horaires(df, mapping=mapping)
+    df_feat = add_advanced_features(df_h, mapping=mapping)
     
-    print(f"Features in X: {X.columns.tolist()}")
-    mm.prepare_pipeline(X)
+    print("New columns:", [c for c in df_feat.columns if c not in df.columns])
     
-    # Minor training check (fastest model - Random Forest is faster to init in local)
-    try:
-        model_reg = mm.train_regression(X, y_reg)
-        print("Model training successful!")
-    except Exception as e:
-        print(f"Model training failed: {e}")
+    # Vérifications des features créées
+    assert 'score_equilibre' in df_feat.columns
+    assert 'reussite' in df_feat.columns
+    assert 'Bedtime_num' in df_feat.columns
+    
+    # Alice devrait réussir (15.5 >= 10)
+    assert df_feat.loc[0, 'reussite'] == 1
+    # Bob devrait échouer (9.5 < 10)
+    assert df_feat.loc[1, 'reussite'] == 0
+    
+    print("✅ All dynamic tests passed!")
 
 if __name__ == "__main__":
-    test_dynamic_pipeline()
+    test_dynamic_features()

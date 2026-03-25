@@ -27,7 +27,7 @@ from sklearn.model_selection import train_test_split
 from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE
 from src.data_utils import charger_donnees, generer_donnees_synthetiques, nettoyer_donnees, valider_schema
 from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
-from src.features import add_advanced_features, prenttoyer_horaires
+from src.features import add_advanced_features, prenttoyer_horaires, get_column_mapping
 from src.models import ModelManager
 from src.reporting import generer_rapport_markdown
 
@@ -245,6 +245,44 @@ elif page == PAGES[1]:
         _set("target_reg", TARGET_REG)
         _set("seuil_reussite", SEUIL_REUSSITE)
 
+    # UI Mapping des colonnes (pour données uploadées)
+    if data_source == "uploaded":
+        st.markdown("---")
+        with st.expander("🔗 Mapping des colonnes (Automatique → Manuel)", expanded=True):
+            st.info("L'IA tente de détecter vos colonnes automatiquement. Vérifiez et ajustez si nécessaire.")
+            mapping = _get("column_mapping")
+            if mapping is None:
+                mapping = get_column_mapping(df.columns)
+                _set("column_mapping", mapping)
+            
+            from src.features import KEYWORDS
+            new_mapping = {}
+            cols_avail = ["-- Non présent --"] + df.columns.tolist()
+            
+            matches_cols = st.columns(3)
+            for i, (concept, description) in enumerate([
+                ('note_moyenne', 'Cible (Note Moyenne)'),
+                ('sommeil', 'Heures de sommeil'),
+                ('etude', 'Heures d\'étude'),
+                ('sport', 'Activité sportive (oui/non)'),
+                ('jeux_video', 'Heures Jeux Vidéo'),
+                ('reseaux', 'Heures Réseaux Sociaux'),
+                ('streaming', 'Heures Streaming'),
+                ('stress', 'Niveau de Stress'),
+                ('heure_coucher', 'Heure de Coucher'),
+                ('heure_lever', 'Heure de Lever')
+            ]):
+                with matches_cols[i % 3]:
+                    current_val = mapping.get(concept, "-- Non présent --")
+                    if current_val not in cols_avail: current_val = "-- Non présent --"
+                    sel = st.selectbox(f"📍 {description}", cols_avail, index=cols_avail.index(current_val), key=f"map_{concept}")
+                    if sel != "-- Non présent --":
+                        new_mapping[concept] = sel
+            
+            if st.button("💾 Enregistrer le mapping"):
+                _set("column_mapping", new_mapping)
+                st.success("✅ Mapping mis à jour.")
+
     st.markdown("---")
     st.markdown("### Traitements")
     
@@ -260,20 +298,25 @@ elif page == PAGES[1]:
             df_clean_tmp = _get("df_clean")
             df_base = df_clean_tmp if df_clean_tmp is not None else df
             
-            if data_source == "synthetic":
-                df_h = prenttoyer_horaires(df_base)
-                df_feat = add_advanced_features(df_h)
+            mapping = _get("column_mapping")
+            if data_source == "uploaded" and mapping is None:
+                mapping = get_column_mapping(df_base.columns)
+                _set("column_mapping", mapping)
+
+            with st.spinner("Application des transformations..."):
+                df_h = prenttoyer_horaires(df_base, mapping=mapping)
+                df_feat = add_advanced_features(df_h, mapping=mapping)
+                
+                # S'assurer que le TARGET_CLF est présent même si note_moyenne absente du mapping
+                if data_source == "uploaded":
+                    target_reg = _get("target_reg")
+                    threshold = _get("seuil_reussite")
+                    from src.config import TARGET_CLF
+                    if TARGET_CLF not in df_feat.columns and target_reg and target_reg in df_feat.columns:
+                        df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
+                
                 _set("df_feat", df_feat)
-                st.success("✅ Features avancées créées.")
-            else:
-                target_reg = _get("target_reg")
-                threshold = _get("seuil_reussite")
-                df_feat = df_base.copy()
-                from src.config import TARGET_CLF
-                if target_reg and target_reg in df_feat.columns:
-                    df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
-                _set("df_feat", df_feat)
-                st.success(f"✅ Features prêtes (Cible définie sur '{target_reg}').")
+                st.success("✅ Feature Engineering terminé avec succès.")
 
     df_clean = _get("df_clean")
     df_feat = _get("df_feat")
