@@ -24,7 +24,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 
-from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE
+from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE, SEUIL_REUSSITE
 from src.data_utils import charger_donnees, generer_donnees_synthetiques, nettoyer_donnees, valider_schema
 from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
 from src.features import add_advanced_features, prenttoyer_horaires, get_column_mapping
@@ -229,7 +229,6 @@ elif page == PAGES[1]:
         st.markdown("### 🎯 Définition de la Cible (Target)")
         df_cols_target = _get("df_clean") if _get("df_clean") is not None else df
         num_cols_tgt = df_cols_target.select_dtypes(include=[np.number]).columns.tolist()
-        from src.config import TARGET_REG, SEUIL_REUSSITE
         default_target = TARGET_REG if TARGET_REG in num_cols_tgt else (num_cols_tgt[0] if num_cols_tgt else None)
         
         col_t1, col_t2 = st.columns(2)
@@ -241,7 +240,6 @@ elif page == PAGES[1]:
         _set("target_reg", target_reg)
         _set("seuil_reussite", threshold)
     else:
-        from src.config import TARGET_REG, SEUIL_REUSSITE
         _set("target_reg", TARGET_REG)
         _set("seuil_reussite", SEUIL_REUSSITE)
 
@@ -311,7 +309,6 @@ elif page == PAGES[1]:
                 if data_source == "uploaded":
                     target_reg = _get("target_reg")
                     threshold = _get("seuil_reussite")
-                    from src.config import TARGET_CLF
                     if TARGET_CLF not in df_feat.columns and target_reg and target_reg in df_feat.columns:
                         df_feat[TARGET_CLF] = (df_feat[target_reg] >= threshold).astype(int)
                 
