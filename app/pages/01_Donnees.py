@@ -26,10 +26,10 @@ from src.explainability import generate_shap_analysis, generate_shap_failure_ana
 from src.features import add_advanced_features, prenttoyer_horaires, get_column_mapping
 from src.models import ModelManager
 from src.reporting import generer_rapport_markdown
-from app.utils_st import _get, _set
+from app.utils_st import _get, _set, cached_generer_donnees
 
 st.sidebar.title("🎓 EduStats")
-st.sidebar.caption("Analyse Prédictive des Performances Scolaires v2.1")
+st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("📂 Données")
 
@@ -54,7 +54,7 @@ with col_gen:
             st.error("⚠️ Veuillez sélectionner au moins une classe.")
         else:
             with st.spinner("Génération en cours…"):
-                df = generer_donnees_synthetiques(int(n_eleves), classes_selectionnees=classes_sel)
+                df = cached_generer_donnees(int(n_eleves), classes_selectionnees=classes_sel)
             _set("df_raw", df)
             _set("data_source", "synthetic")
             _set("df_clean", None)
@@ -88,12 +88,12 @@ df = _get("df_raw")
 if df is not None:
     st.markdown("---")
     st.subheader("Aperçu des données")
-    st.dataframe(df.head(20), width='stretch')
+    st.dataframe(df.head(20), use_container_width=True)
 
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Statistiques descriptives")
-        st.dataframe(df.describe(), width='stretch')
+        st.dataframe(df.describe(), use_container_width=True)
     with col2:
         st.subheader("Valeurs manquantes")
         na_df = df.isnull().sum().rename("NaN").reset_index()
@@ -102,7 +102,7 @@ if df is not None:
         if na_df.empty:
             st.info("Aucune valeur manquante.")
         else:
-            st.dataframe(na_df, width='stretch')
+            st.dataframe(na_df, use_container_width=True)
 
     st.markdown("---")
     st.subheader("Visualisations des données")
@@ -160,7 +160,7 @@ if df is not None:
                             title=f"Distribution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"}
                         )
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Générez des données synthétiques ou chargez un fichier CSV pour commencer.")
 

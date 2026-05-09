@@ -195,3 +195,67 @@ def generate_shap_analysis(model_pipeline: Any, X_sample: pd.DataFrame, buf: Opt
         logger.error(f"Erreur lors de l'analyse SHAP : {e}", exc_info=True)
         plt.close('all')
         return None
+
+
+def get_individual_shap_values(model_pipeline: Any, X_sample: pd.DataFrame,
+                                student_index: int = 0) -> Optional[dict]:
+    """
+    Extrait les SHAP values pour un élève spécifique.
+
+    Returns
+    -------
+    dict avec clés : feature_names, shap_values (1D array), base_value
+    """
+    try:
+        preprocessor = model_pipeline.named_steps['pre']
+        model = model_pipeline.named_steps['model']
+
+        X_transformed = preprocessor.transform(X_sample)
+        cat_feature_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
+        num_feature_names = preprocessor.transformers_[0][2]
+        all_feature_names = list(num_feature_names) + list(cat_feature_names)
+
+        if 'select' in model_pipeline.named_steps:
+            selector = model_pipeline.named_steps['select']
+            X_transformed = selector.transform(X_transformed)
+            selected_mask = selector.get_support()
+            all_feature_names = [n for n, s in zip(all_feature_names, selected_mask) if s]
+
+        if hasattr(X_transformed, 'toarray'):
+            X_transformed = X_transformed.toarray()
+        elif hasattr(X_transformed, 'todense'):
+            X_transformed = np.asarray(X_transformed.todense())
+
+        model_type = type(model).__name__
+        if model_type in ('XGBRegressor', 'XGBClassifier', 'RandomForestRegressor', 'RandomForestClassifier'):
+            explainer = shap.TreeExplainer(model)
+        else:
+            bg_size = min(20, X_transformed.shape[0])
+            explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size])
+
+        shap_vals = explainer(X_transformed)
+
+        idx = min(student_index, len(X_sample) - 1)
+        return {
+            "feature_names": all_feature_names,
+            "shap_values": shap_vals.values[idx],
+            "base_value": float(shap_vals.base_values[idx]) if hasattr(shap_vals, 'base_values') else 0.0,
+        }
+    except Exception as e:
+        logger.error(f"Erreur SHAP individuel : {e}", exc_info=True)
+        return None
+
+
+def get_top_actionable_factors(shap_result: dict, top_n: int = 10) -> list:
+    """
+    Retourne les top-N facteurs triés par impact SHAP absolu.
+
+    Returns list of (feature_name, shap_value) tuples.
+    """
+    if shap_result is None:
+        return []
+    names = shap_result["feature_names"]
+    values = shap_result["shap_values"]
+    pairs = list(zip(names, values))
+    pairs.sort(key=lambda x: abs(x[1]), reverse=True)
+    return pairs[:top_n]

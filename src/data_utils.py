@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 import logging
 import io
-import streamlit as st
 from typing import List, Optional, Dict, Any
 from src.config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
 
@@ -21,7 +20,6 @@ def valider_schema(df: pd.DataFrame, colonnes_requises: List[str]) -> None:
     logger.info("Validation du schéma réussie.")
 
 
-@st.cache_data(show_spinner=False)
 def generer_donnees_synthetiques(n_eleves: int = 300, classes_selectionnees: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Génère un jeu de données synthétiques 100% compatible avec Questionnaire.html.
@@ -149,16 +147,18 @@ def generer_donnees_synthetiques(n_eleves: int = 300, classes_selectionnees: Opt
         classe = data['Classe'][i]
         
         # Attribution des spécialités selon la classe
-        if classe == '1ere':
-            spes = np.random.choice(spe_possibles, 3, replace=False)
-            for j, s in enumerate(spes):
+        if classe in ['1ere', 'terminale']:
+            spes_1ere = np.random.choice(spe_possibles, 3, replace=False)
+            for j, s in enumerate(spes_1ere):
                 data[f'Specialite1ere_{j+1}_nom'][i] = s
                 data[f'Specialite1ere_{j+1}_interet'][i] = np.random.randint(0, 11)
-        elif classe == 'terminale':
-            spes = np.random.choice(spe_possibles, 2, replace=False)
-            for j, s in enumerate(spes):
-                data[f'SpecialiteTerm_{j+1}_nom'][i] = s
-                data[f'SpecialiteTerm_{j+1}_interet'][i] = np.random.randint(0, 11)
+            
+            if classe == 'terminale':
+                # En terminale, on conserve 2 des 3 spécialités de première
+                spes_term = np.random.choice(spes_1ere, 2, replace=False)
+                for j, s in enumerate(spes_term):
+                    data[f'SpecialiteTerm_{j+1}_nom'][i] = s
+                    data[f'SpecialiteTerm_{j+1}_interet'][i] = np.random.randint(0, 11)
 
         # Signal déterministe pour les notes
         bonus = 0
@@ -182,12 +182,12 @@ def generer_donnees_synthetiques(n_eleves: int = 300, classes_selectionnees: Opt
         data['note_sciences'][i] = np.clip(np.random.normal(11, 2.5) + bonus_centre, 0, 20)
         
         # Notes de spécialités (Lycée uniquement)
-        if classe == '1ere':
+        if classe in ['1ere', 'terminale']:
             for j in range(1, 4):
                 data[f'note_specialite1ere_{j}'][i] = np.clip(np.random.normal(12, 3.0) + bonus_centre, 0, 20)
-        elif classe == 'terminale':
-            for j in range(1, 3):
-                data[f'note_specialiteterm_{j}'][i] = np.clip(np.random.normal(12, 3.0) + bonus_centre, 0, 20)
+            if classe == 'terminale':
+                for j in range(1, 3):
+                    data[f'note_specialiteterm_{j}'][i] = np.clip(np.random.normal(12, 3.0) + bonus_centre, 0, 20)
 
     # Conversion finale en DataFrame
     data = {k.lower(): v for k, v in data.items()}
@@ -198,7 +198,6 @@ def generer_donnees_synthetiques(n_eleves: int = 300, classes_selectionnees: Opt
     return df
 
 
-@st.cache_data(show_spinner=False)
 def charger_donnees(chemin: str) -> Optional[pd.DataFrame]:
     """Charge les données depuis CSV avec détection automatique du séparateur."""
     try:
@@ -216,7 +215,6 @@ def charger_donnees(chemin: str) -> Optional[pd.DataFrame]:
         return None
 
 
-@st.cache_data(show_spinner=False)
 def nettoyer_donnees(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     """Nettoyage des données : suppression colonnes vides et imputation."""
     if df is None: return None

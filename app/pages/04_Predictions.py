@@ -29,7 +29,7 @@ from src.reporting import generer_rapport_markdown
 from app.utils_st import _get, _set
 
 st.sidebar.title("🎓 EduStats")
-st.sidebar.caption("Analyse Prédictive des Performances Scolaires v2.1")
+st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("🔮 Prédictions")
 
@@ -62,14 +62,13 @@ with col_btn:
                 new_mm = ModelManager()
                 if new_mm.load_models(path=full_path):
                     _set("mm", new_mm)
-                    # Utiliser les meilleurs modèles globaux s'ils existent, sinon les modèles par défaut
                     _set("model_reg", new_mm.best_overall_reg if new_mm.best_overall_reg else new_mm.best_model_reg)
                     _set("model_clf", new_mm.best_overall_clf if new_mm.best_overall_clf else new_mm.best_model_clf)
                     _set("model_nn_reg", new_mm.best_model_nn_reg)
                     _set("model_nn_clf", new_mm.best_model_nn_clf)
-                    # On suppose que les features sont les mêmes que celles du pipeline
-                    # Si besoin de stocker feature_columns dans le joblib, il faudrait modifier ModelManager.save_models
-                    # Pour l'instant on réutilise ce qu'il y a en session_state si présent
+                    # BUG#5 fix : restauration des feature_columns persistées dans le joblib
+                    if new_mm.feature_columns is not None:
+                        _set("feature_columns", new_mm.feature_columns)
                     st.success(f"✅ Modèle {selected_model_file} chargé.")
                     st.rerun()
                 else:
@@ -79,6 +78,9 @@ with col_btn:
 
 if _get("model_reg") is None:
     st.stop()
+
+# BUG#2 fix : feature_columns doit être disponible pour les prédictions sur données uploadées
+feature_columns = _get("feature_columns")
 
 tab_ind, tab_all = st.tabs(["👤 Prédiction Individuelle", "📋 Prédictions par Élève"])
 
@@ -108,6 +110,13 @@ with tab_ind:
             input_data['type_etab'] = st.selectbox("Type d'établissement", ["Public", "Privé"])
 
     else:
+        # BUG#2 fix : feature_columns est requis pour le mode "données uploadées"
+        if feature_columns is None:
+            st.error("⚠️ Les colonnes du modèle sont introuvables. Veuillez d'abord entraîner un modèle (Page 3) ou recharger un modèle sauvegardé ci-dessus.")
+            st.stop()
+        if df_feat is None:
+            st.error("⚠️ Les données doivent être prétraitées (Page 2) avant la prédiction.")
+            st.stop()
         st.info("Saisie dynamique des paramètres pour le modèle.")
         cols = st.columns(3)
         for i, col in enumerate(feature_columns):
@@ -203,7 +212,7 @@ with tab_all:
                 if target_reg in df_preds.columns:
                     df_preds['Écart'] = df_preds['Note Prédite (Moy)'] - df_preds[target_reg]
                 
-                st.dataframe(df_preds, width='stretch')
+                st.dataframe(df_preds, use_container_width=True)
                 
                 csv = df_preds.to_csv(index=False, sep=';', encoding='utf-8-sig')
                 st.download_button(

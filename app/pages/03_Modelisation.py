@@ -29,7 +29,7 @@ from src.reporting import generer_rapport_markdown
 from app.utils_st import _get, _set
 
 st.sidebar.title("🎓 EduStats")
-st.sidebar.caption("Analyse Prédictive des Performances Scolaires v2.1")
+st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("🤖 Modélisation")
 
@@ -158,6 +158,7 @@ if st.button("🚀 Entraîner les modèles"):
             _set("metrics_svm_clf", metrics_svm_clf)
             _set("confusion_matrix", cm)
             _set("feature_columns", list(X_train.columns))
+            mm.feature_columns = list(X_train.columns)  # BUG#5 fix : pour persistance dans joblib
 
             # Sélection du meilleur modèle global
             # Régression
@@ -311,7 +312,7 @@ if metrics_reg is not None:
             showscale=True
         )
         fig_cm.update_layout(title="Matrice de confusion")
-        st.plotly_chart(fig_cm, width='stretch')
+        st.plotly_chart(fig_cm, use_container_width=True)
         st.info("""
         **Comment lire cette matrice ?**
         - **Diagonale (bleu foncé)** : Prédictions correctes (Réel = Prédit).

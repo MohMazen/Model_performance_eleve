@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error, a
 
 from src.config import DATA_FILE, LOG_FILE, TARGET_REG, TARGET_CLF, COLS_TO_DROP
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees, charger_donnees
-from src.features import add_advanced_features, prenttoyer_horaires
+from src.features import add_advanced_features, nettoyer_horaires
 from src.models import ModelManager
 from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
 from src.reporting import generer_rapport_markdown
@@ -54,7 +54,7 @@ def main():
 
     # 2. Preprocessing & Feature Engineering
     df = nettoyer_donnees(df)
-    df = prenttoyer_horaires(df)
+    df = nettoyer_horaires(df)
     df = add_advanced_features(df)
 
     # 3. Préparation des données

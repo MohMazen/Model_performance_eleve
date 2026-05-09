@@ -29,7 +29,7 @@ from src.reporting import generer_rapport_markdown
 from app.utils_st import _get, _set
 
 st.sidebar.title("🎓 EduStats")
-st.sidebar.caption("Analyse Prédictive des Performances Scolaires v2.1")
+st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("🔧 Preprocessing")
 
@@ -147,7 +147,7 @@ if df_clean is not None or df_feat is not None:
             na_apres = df_clean.isnull().sum().sum()
             st.metric("Valeurs manquantes avant", na_avant)
             st.metric("Valeurs manquantes après", na_apres)
-            st.dataframe(df_clean.head(10), width='stretch')
+            st.dataframe(df_clean.head(10), use_container_width=True)
         else:
             st.info("Cliquez sur 'Nettoyer les données'.")
 
@@ -166,7 +166,7 @@ if df_clean is not None or df_feat is not None:
             - **`reussite`** : Variable cible binaire créée pour la classification (1 si $\ge$ 10, 0 sinon).
             """)
 
-            st.dataframe(df_feat[new_cols].head(10), width='stretch')
+            st.dataframe(df_feat[new_cols].head(10), use_container_width=True)
         else:
             st.info("Cliquez sur 'Feature Engineering'.")
 

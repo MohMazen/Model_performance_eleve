@@ -118,8 +118,8 @@ def parse_heure(v: Any) -> float:
         return 0.0
 
 
-def prenttoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None) -> pd.DataFrame:
-    """Convertit les colonnes horaires en numérique."""
+def nettoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None) -> pd.DataFrame:
+    """Convertit les colonnes horaires (heure_coucher, heure_lever) en valeurs numériques."""
     df_h = df.copy()
     if mapping is None:
         mapping = get_column_mapping(df_h.columns)
@@ -129,3 +129,8 @@ def prenttoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = No
         if col and col in df_h.columns:
             df_h[f"{col}_num"] = df_h[col].apply(parse_heure)
     return df_h
+
+
+# Alias de compatibilité ascendante — BUG#4 fix (typo originelle conservée temporairement)
+# Utiliser nettoyer_horaires dans les nouveaux codes
+prenttoyer_horaires = nettoyer_horaires

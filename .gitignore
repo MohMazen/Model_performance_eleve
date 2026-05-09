@@ -7,29 +7,54 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.egg
 
 # IDE
 .idea/
 .vscode/
 *.iml
+*.swp
+*.swo
+*~
 
 # Environnements virtuels
 venv/
 .env/
 .venv/
+env/
 
-# Fichiers générés par le projet
+# Modèles ML (fichiers volumineux)
+*.joblib
+*.pkl
+*.h5
+*.onnx
 outputs/*.joblib
+outputs/*.pkl
+
+# Logs et rapports générés
+*.log
 outputs/*.log
 outputs/*.md
-*.joblib
-*.log
+outputs/*.pdf
 rapport_analyse_scolaire.md
 analysis.log
-model_final.joblib
 
-# Ancien dossier Data (remplacé par data/)
+# Données (ne pas versionner les gros CSV)
+data/*.csv
+data/*.xlsx
+data/*.xls
+
+# Ancien dossier Data
 Data/
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb
+
+# Pytest
+.pytest_cache/
+pytest_output.txt
+
+# Fichiers temporaires
+tmp_*.py
+*.tmp

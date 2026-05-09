@@ -1,4 +1,4 @@
-# 🏫 Analyse Prédictive des Performances Scolaires
+# 🏫 Analyse Prédictive des Performances Scolaires — EduStats v3.0
 
 ## 📋 Description
 
@@ -8,8 +8,12 @@ Ce projet implémente une méthodologie complète d'analyse des données éducat
 
 - **Prédire** la performance scolaire des élèves
 - **Identifier** les facteurs clés de réussite et d'échec
-- **Fournir** des recommandations pédagogiques basées sur les données
-- **Générer** des rapports automatisés pour la prise de décision
+- **Détecter** proactivement les élèves à risque (Early Warning System)
+- **Recommander** des actions pédagogiques personnalisées basées sur l'IA
+- **Suivre** l'évolution des élèves dans le temps (analyse longitudinale)
+- **Segmenter** les profils d'élèves en archétypes comportementaux
+- **Générer** des rapports automatisés (Markdown & PDF)
+- **Exposer** les prédictions via une API REST
 
 ## 📁 Structure du projet
 
@@ -19,24 +23,42 @@ Model_performance_eleve/
 ├── README.md
 ├── requirements.txt
 ├── Questionnaire.html
-├── main.py                     # Point d'entrée en ligne de commande
+├── main.py                         # Point d'entrée en ligne de commande
 ├── data/
-│   └── test_synthetique.csv    # Jeu de données élèves
+│   └── test_synthetique_v2.csv     # Jeu de données élèves
 ├── src/
 │   ├── __init__.py
-│   ├── config.py               # Constantes et chemins
-│   ├── data_utils.py           # Chargement, nettoyage, génération de données
-│   ├── features.py             # Feature engineering
-│   ├── models.py               # Entraînement ML (XGBoost, Random Forest, Réseau de Neurones)
-│   ├── explainability.py       # Analyse SHAP
-│   └── reporting.py            # Génération de rapports et visualisations
+│   ├── config.py                   # Constantes et chemins
+│   ├── data_utils.py               # Chargement, nettoyage, génération de données
+│   ├── features.py                 # Feature engineering adaptatif
+│   ├── models.py                   # Entraînement ML (XGBoost, RF, MLP, SVM)
+│   ├── explainability.py           # Analyse SHAP (globale + individuelle)
+│   ├── reporting.py                # Rapports Markdown & PDF
+│   ├── early_warning.py            # 🆕 Système d'alerte précoce
+│   ├── clustering.py               # 🆕 Segmentation des profils d'élèves
+│   ├── temporal.py                 # 🆕 Analyse temporelle / longitudinale
+│   ├── recommendations.py          # 🆕 Recommandations personnalisées IA
+│   └── api.py                      # 🆕 API REST (FastAPI)
 ├── app/
-│   └── dashboard.py            # Dashboard Streamlit 6 pages
-├── outputs/                    # Fichiers générés (modèles, logs, rapports)
-│   └── .gitkeep
+│   ├── Accueil.py                  # Page d'accueil Streamlit
+│   ├── utils_st.py                 # Utilitaires session_state
+│   └── pages/
+│       ├── 01_Donnees.py           # Chargement / génération de données
+│       ├── 02_Preprocessing.py     # Nettoyage & feature engineering
+│       ├── 03_Modelisation.py      # Entraînement & benchmark des modèles
+│       ├── 04_Predictions.py       # Prédictions individuelles & par lot
+│       ├── 05_Explicabilite.py     # Analyse SHAP (réussite & échec)
+│       ├── 06_Rapport.py           # Export Markdown & PDF
+│       ├── 07_Alertes.py           # 🆕 Early Warning System
+│       ├── 08_Suivi_Temporel.py    # 🆕 Analyse longitudinale
+│       ├── 09_Profils.py           # 🆕 Clustering / archétypes
+│       └── 10_Recommandations.py   # 🆕 Recommandations IA + What-If
+├── outputs/                        # Fichiers générés (modèles, logs, rapports)
 └── tests/
     ├── __init__.py
-    └── test_features.py        # Tests unitaires
+    ├── test_features.py            # Tests features & data_utils
+    ├── test_models.py              # Tests modèles ML
+    └── test_v3_modules.py          # 🆕 Tests v3.0 (21 tests)
 ```
 
 ## 🔧 Installation
@@ -54,88 +76,83 @@ pip install -r requirements.txt
 
 ### Lancer le dashboard interactif (recommandé)
 ```bash
-streamlit run app/dashboard.py
+streamlit run app/Accueil.py
 ```
 
-Le dashboard propose 6 pages :
+Le dashboard propose **10 pages** :
 1. **📂 Données** – Générer des données synthétiques ou charger un CSV
 2. **🔧 Preprocessing** – Nettoyage et feature engineering
 3. **🤖 Modélisation** – Entraîner et évaluer les modèles ML
-4. **🔮 Prédictions** – Simuler la note d'un élève
-6. **📊 Explicabilité (SHAP)** – Comprendre les décisions du modèle
-7. **📝 Rapport** – Générer et télécharger le rapport Markdown
+4. **🔮 Prédictions** – Simuler la note d'un élève ou prédire par lot
+5. **📊 Explicabilité (SHAP)** – Comprendre les décisions du modèle
+6. **📝 Rapport** – Générer et télécharger (Markdown & PDF)
+7. **🚨 Alertes** – Détection proactive des élèves à risque
+8. **📈 Suivi Temporel** – Analyse longitudinale multi-périodes
+9. **🎯 Profils** – Segmentation en archétypes comportementaux
+10. **💡 Recommandations** – Actions personnalisées + simulateur What-If
 
-### Nouveautés v2.1
-- **Multi-Output Regression** : Prédiction simultanée de la moyenne et des notes par matière (Français, Maths, Histoire-Géo, Sciences).
-- **📋 Prédictions par Élève** : Nouvel onglet permettant de visualiser et télécharger (CSV) les prédictions pour l'ensemble des élèves.
-- **Gestion Avancée des Modèles** : Possibilité de nommer, sauvegarder et charger différents fichiers `.joblib`.
-- **Aide au Diagnostic** : Explications intégrées pour les métriques d'évaluation et la matrice de confusion.
+### Lancer l'API REST
+```bash
+uvicorn src.api:app --reload --port 8000
+```
+
+Endpoints disponibles :
+- `GET /docs` — Documentation Swagger interactive
+- `POST /predict` — Prédiction individuelle
+- `POST /predict/batch` — Prédiction par lot (CSV upload)
+- `GET /metrics` — Informations sur le modèle courant
+- `GET /health` — Health check
 
 ### Lancer l'analyse en ligne de commande
 ```bash
 python main.py
 ```
 
-Cette commande :
-1. Génère ou charge les données (`data/test_synthetique.csv`)
-2. Applique le preprocessing et le feature engineering
-3. Entraîne un modèle XGBoost (régression) et un Random Forest (classification) avec séparation train/test
-4. Lance l'analyse SHAP
-5. Sauvegarde les modèles dans `outputs/model_final.joblib`
-6. Génère un rapport dans `outputs/rapport_analyse_scolaire.md`
-
 ### Lancer les tests unitaires
 ```bash
-python -m pytest tests/
+python -m pytest tests/ -v
 ```
 
-## 📊 Structure des Données
+## 🆕 Nouveautés v3.0
 
-### Variables d'entrée attendues
+### 🚨 Système d'Alerte Précoce (Early Warning System)
+- Score de risque composite (60% ML + 40% règles métier éducatives)
+- Classification en 4 zones : 🟢 Serein / 🟡 Vigilance / 🟠 Alerte / 🔴 Critique
+- Décomposition des facteurs de risque avec recommandations par règle
+- Export CSV des alertes
 
-#### 🧑‍🎓 Facteurs Individuels
-- `age`: Âge de l'élève
-- `genre`: Genre (M/F)
-- `absences`, `retards`: Indicateurs d'assiduité
-- `heures_devoirs`: Temps de travail personnel
-- `heures_sommeil`: Heures de sommeil par nuit
-- `temps_ecrans`: Temps d'écrans quotidien (heures)
-- `motivation`, `confiance_soi`, `stress`, `perseverance`: Facteurs psychologiques (1-10)
-- `heure_coucher`, `heure_lever`: Horaires de repos (format `22h30`)
-- `duree_trajet`: Temps de transport en minutes
+### 📈 Suivi Temporel & Analyse Longitudinale
+- Import multi-périodes (plusieurs CSV) ou génération synthétique
+- Calcul de tendances par élève (régression linéaire)
+- Détection automatique de décrochage (pente significativement négative)
+- Visualisation des trajectoires individuelles
 
-#### 👨‍👩‍👧‍👦 Facteurs Familiaux
-- `niveau_etudes_parents`: Niveau d'éducation des parents
-- `revenus_famille`: Niveau socio-économique
-- `suivi_parental`: Intensité du suivi parental
-- `nombre_fratrie`: Nombre de frères et sœurs
+### 🎯 Clustering des Profils d'Élèves
+- Segmentation K-Means / DBSCAN avec détection automatique du nombre optimal de clusters
+- Nommage automatique des archétypes (ex: "📖 Le Studieux Stressé", "⚖️ L'Équilibré Performant")
+- Projection PCA/t-SNE interactive
+- Radar charts comparatifs
 
-#### 🏫 Facteurs Scolaires
-- `classe`: Niveau (4ème ou 3ème)
-- `taille_classe`: Nombre d'élèves par classe
-- `type_etablissement`: Public/Privé
-- `climat_scolaire`: Qualité de l'environnement scolaire
-- `soutien_scolaire`: Aide supplémentaire (Oui/Non)
+### 💡 Recommandations Personnalisées par IA
+- Transformation des SHAP values en actions concrètes et actionnables
+- Top-N recommandations priorisées par impact
+- Simulateur What-If : modifier un paramètre → voir l'impact en temps réel
+- Export de plans d'action individuels (Markdown)
 
-#### 📝 Notes
-- `note_francais`, `note_maths`, `note_histoire_geo`, `note_sciences`: Notes par matière (calculées automatiquement dans la génération synthétique)
-- `note_moyenne`: Moyenne générale (variable cible)
-
-### Variables créées par le Feature Engineering
-- `score_equilibre`: ratio (sommeil + sport) / (devoirs + écrans + 1)
-- `stress_absences`: interaction stress × absences
-- `motivation_travail`: interaction motivation × heures de devoirs
-- `reussite`: 1 si note_moyenne ≥ 10, sinon 0 (variable cible binaire)
-- `heure_coucher_num`, `heure_lever_num`: horaires convertis en float
+### 📄 Export PDF & API REST
+- Rapport PDF professionnel avec graphiques intégrés (via reportlab)
+- API REST FastAPI avec documentation Swagger auto-générée
 
 ## 🤖 Modèles ML
 
 | Tâche | Algorithme | Paramètres clés |
 |-------|-----------|-----------------|
 | Régression (note) | XGBoost | RandomizedSearchCV, 3-fold CV |
-| Classification (réussite) | Random Forest | `class_weight='balanced'` pour gérer le déséquilibre |
-| Régression (note) | Réseau de Neurones (MLPRegressor) | RandomizedSearchCV, 3-fold CV |
-| Classification (réussite) | Réseau de Neurones (MLPClassifier) | RandomizedSearchCV, 3-fold CV |
+| Classification (réussite) | Random Forest | `class_weight='balanced'` |
+| Régression (note) | Réseau de Neurones (MLP) | RandomizedSearchCV, 3-fold CV |
+| Classification (réussite) | Réseau de Neurones (MLP) | RandomizedSearchCV, 3-fold CV |
+| Régression (note) | SVM (SVR) | RandomizedSearchCV, 3-fold CV |
+| Classification (réussite) | SVM (SVC) | `probability=True` |
 
 ## 📈 Métriques d'Évaluation
 
@@ -149,20 +166,9 @@ python -m pytest tests/
 - **F1-Score**: Harmonie précision/rappel
 - **Precision / Recall**: Détaillés pour la classe minoritaire (échec)
 
-## 🐛 Corrections de Bugs apportées
-
-| Bug | Correction |
-|-----|-----------|
-| Data leakage : évaluation sur données d'entraînement | `train_test_split` (80/20) dans `main.py` |
-| Classes déséquilibrées (~4% d'échec) | `class_weight='balanced'` dans `RandomForestClassifier` |
-| `except:` nu (attrape tout) | `except (FileNotFoundError, KeyError, Exception) as e:` avec logging |
-| Absence de validation de schéma | Fonction `valider_schema()` dans `src/data_utils.py` |
-| Dashboard incompatible avec le pipeline | Colonnes correctement droppées dans `app/dashboard.py` |
-
 ## 🔧 Format des fichiers CSV
 
-Pour assurer une compatibilité optimale entre le questionnaire HTML et l'analyse Python :
-- **Séparateur** : point-virgule (`;`)
+- **Séparateur** : point-virgule (`;`) — détection automatique supportée
 - **Encodage** : `UTF-8 avec BOM` (`utf-8-sig`)
 
 ## 📄 Licence
@@ -170,4 +176,4 @@ Pour assurer une compatibilité optimale entre le questionnaire HTML et l'analys
 Ce projet est développé pour des fins éducatives et de recherche.
 
 ---
-*Système d'Analyse Scolaire v2.1*
+*Système d'Analyse Scolaire EduStats v3.0*

@@ -1,5 +1,5 @@
 """
-EntraÃ®nement des modÃ¨les, tuning et persistance.
+Entraînement des modèles, tuning et persistance.
 """
 import numpy as np
 import pandas as pd
@@ -32,9 +32,10 @@ class ModelManager:
         self.best_overall_reg = None
         self.best_overall_clf = None
         self.subject_models: Dict[str, Any] = {}
+        self.feature_columns: Optional[list] = None  # Persisté pour la reconstruction après reload
 
     def prepare_pipeline(self, X: pd.DataFrame) -> ColumnTransformer:
-        """DÃ©finit le preprocesseur automatique."""
+        """Définit le preprocesseur automatique."""
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
 
@@ -49,11 +50,11 @@ class ModelManager:
         return self.preprocessor
 
     def train_regression(self, X: pd.DataFrame, y: pd.Series, subject_name: Optional[str] = None) -> Any:
-        """EntraÃ®ne et tune un modÃ¨le de rÃ©gression (XGBoost)."""
+        """Entraîne et tune un modèle de régression (XGBoost)."""
         if subject_name:
-            logger.info(f"EntraÃ®nement du modÃ¨le de rÃ©gression pour {subject_name}...")
+            logger.info(f"Entraînement du modèle de régression pour {subject_name}...")
         else:
-            logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (XGBoost)...")
+            logger.info("Entraînement du modèle de régression (XGBoost)...")
 
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
         
@@ -77,15 +78,15 @@ class ModelManager:
             return self.subject_models[subject_name]
         else:
             self.best_model_reg = search.best_estimator_
-            logger.info(f"Meilleur score R2 rÃ©gression : {search.best_score_:.4f}")
+            logger.info(f"Meilleur score R2 régression : {search.best_score_:.4f}")
             return self.best_model_reg
 
     def train_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        """EntraÃ®ne et tune un modÃ¨le de classification.
+        """Entraîne et tune un modèle de classification.
 
-        Utilise class_weight='balanced' pour gÃ©rer le dÃ©sÃ©quilibre des classes.
+        Utilise class_weight='balanced' pour gérer le déséquilibre des classes.
         """
-        logger.info("EntraÃ®nement du modÃ¨le de classification (Random Forest)...")
+        logger.info("Entraînement du modèle de classification (Random Forest)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -107,8 +108,8 @@ class ModelManager:
         return self.best_model_clf
 
     def train_nn_regression(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        """EntraÃ®ne et tune un rÃ©seau de neurones pour la rÃ©gression."""
-        logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (RÃ©seau de Neurones)...")
+        """Entraîne et tune un réseau de neurones pour la régression."""
+        logger.info("Entraînement du modèle de régression (Réseau de Neurones)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -126,12 +127,12 @@ class ModelManager:
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_nn_reg = search.best_estimator_
-        logger.info(f"Meilleur score R2 rÃ©gression NN : {search.best_score_:.4f}")
+        logger.info(f"Meilleur score R2 régression NN : {search.best_score_:.4f}")
         return self.best_model_nn_reg
 
     def train_nn_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        """EntraÃ®ne et tune un rÃ©seau de neurones pour la classification."""
-        logger.info("EntraÃ®nement du modÃ¨le de classification (RÃ©seau de Neurones)...")
+        """Entraîne et tune un réseau de neurones pour la classification."""
+        logger.info("Entraînement du modèle de classification (Réseau de Neurones)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -153,8 +154,8 @@ class ModelManager:
         return self.best_model_nn_clf
 
     def train_svm_regression(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        """EntraÃ®ne un modÃ¨le SVR (Support Vector Regression)."""
-        logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (SVM)...")
+        """Entraîne un modèle SVR (Support Vector Regression)."""
+        logger.info("Entraînement du modèle de régression (SVM)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -172,12 +173,12 @@ class ModelManager:
         search = RandomizedSearchCV(pipeline, param_dist, n_iter=10, cv=3, random_state=42)
         search.fit(X, y)
         self.best_model_svm_reg = search.best_estimator_
-        logger.info(f"Meilleur score R2 rÃ©gression SVM : {search.best_score_:.4f}")
+        logger.info(f"Meilleur score R2 régression SVM : {search.best_score_:.4f}")
         return self.best_model_svm_reg
 
     def train_svm_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        """EntraÃ®ne un modÃ¨le SVC (Support Vector Classification)."""
-        logger.info("EntraÃ®nement du modÃ¨le de classification (SVM)...")
+        """Entraîne un modèle SVC (Support Vector Classification)."""
+        logger.info("Entraînement du modèle de classification (SVM)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
 
         pipeline = Pipeline(steps=[
@@ -198,7 +199,7 @@ class ModelManager:
         return self.best_model_svm_clf
 
     def save_models(self, path: str = MODEL_FILE) -> None:
-        """Sauvegarde les modÃ¨les sur disque."""
+        """Sauvegarde les modèles et les métadonnées sur disque."""
         joblib.dump({
             'reg': self.best_model_reg,
             'clf': self.best_model_clf,
@@ -208,12 +209,13 @@ class ModelManager:
             'svm_clf': self.best_model_svm_clf,
             'best_reg': self.best_overall_reg,
             'best_clf': self.best_overall_clf,
-            'subject_models': self.subject_models
+            'subject_models': self.subject_models,
+            'feature_columns': self.feature_columns,  # BUG#5 fix : persistance des colonnes
         }, path)
-        logger.info(f"ModÃ¨les sauvegardÃ©s dans {path}")
+        logger.info(f"Modèles sauvegardés dans {path}")
 
     def load_models(self, path: str = MODEL_FILE) -> bool:
-        """Charge les modÃ¨les depuis le disque."""
+        """Charge les modèles depuis le disque."""
         try:
             dict_models = joblib.load(path)
             self.best_model_reg = dict_models['reg']
@@ -225,8 +227,12 @@ class ModelManager:
             self.best_overall_reg = dict_models.get('best_reg')
             self.best_overall_clf = dict_models.get('best_clf')
             self.subject_models = dict_models.get('subject_models', {})
-            logger.info("ModÃ¨les chargÃ©s avec succÃ¨s.")
+            self.feature_columns = dict_models.get('feature_columns')  # BUG#5 fix
+            logger.info("Modèles chargés avec succès.")
             return True
-        except (FileNotFoundError, KeyError, Exception) as e:
-            logger.warning(f"Impossible de charger les modÃ¨les depuis {path} : {e}")
+        except (FileNotFoundError, KeyError) as e:
+            logger.warning(f"Impossible de charger les modèles depuis {path} : {e}")
+            return False
+        except Exception as e:
+            logger.warning(f"Erreur inattendue au chargement des modèles depuis {path} : {e}")
             return False

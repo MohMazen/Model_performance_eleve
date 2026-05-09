@@ -34,5 +34,13 @@ markdown>=3.4.0
 jupyter>=1.0.0
 ipykernel>=6.15.0
 
+# API REST
+fastapi>=0.100.0
+uvicorn>=0.22.0
+pydantic>=2.0.0
+
+# PDF Reports
+reportlab>=4.0.0
+
 # Tests
 pytest>=7.0.0

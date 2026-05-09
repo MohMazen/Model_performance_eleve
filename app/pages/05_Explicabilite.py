@@ -29,7 +29,7 @@ from src.reporting import generer_rapport_markdown
 from app.utils_st import _get, _set
 
 st.sidebar.title("🎓 EduStats")
-st.sidebar.caption("Analyse Prédictive des Performances Scolaires v2.1")
+st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("📊 Explicabilité (SHAP)")
 
@@ -81,13 +81,13 @@ if shap_buf_succ is not None:
     
     with col_s:
         st.subheader("🔵 Facteurs de Réussite")
-        st.image(shap_buf_succ, width='stretch')
+        st.image(shap_buf_succ, use_container_width=True)
         st.caption("Variables favorisant une note élevée.")
 
     with col_f:
         st.subheader("🔴 Facteurs d'Échec")
         if shap_buf_fail:
-            st.image(shap_buf_fail, width='stretch')
+            st.image(shap_buf_fail, use_container_width=True)
             st.caption("Variables contribuant à une note faible (<10).")
         else:
             st.info("Aucun élève en situation d'échec dans cet échantillon pour identifier des facteurs spécifiques.")
