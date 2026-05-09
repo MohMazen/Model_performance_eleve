@@ -1,9 +1,11 @@
-﻿"""
+"""
 EntraÃ®nement des modÃ¨les, tuning et persistance.
 """
 import numpy as np
+import pandas as pd
 import logging
 import joblib
+from typing import Optional, Dict, Any
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -19,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class ModelManager:
-    def __init__(self):
-        self.preprocessor = None
+    def __init__(self) -> None:
+        self.preprocessor: Optional[ColumnTransformer] = None
         self.best_model_reg = None
         self.best_model_clf = None
         self.best_model_nn_reg = None
@@ -29,9 +31,9 @@ class ModelManager:
         self.best_model_svm_clf = None
         self.best_overall_reg = None
         self.best_overall_clf = None
-        self.subject_models = {}
+        self.subject_models: Dict[str, Any] = {}
 
-    def prepare_pipeline(self, X):
+    def prepare_pipeline(self, X: pd.DataFrame) -> ColumnTransformer:
         """DÃ©finit le preprocesseur automatique."""
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
@@ -46,7 +48,7 @@ class ModelManager:
             ])
         return self.preprocessor
 
-    def train_regression(self, X, y, subject_name=None):
+    def train_regression(self, X: pd.DataFrame, y: pd.Series, subject_name: Optional[str] = None) -> Any:
         """EntraÃ®ne et tune un modÃ¨le de rÃ©gression (XGBoost)."""
         if subject_name:
             logger.info(f"EntraÃ®nement du modÃ¨le de rÃ©gression pour {subject_name}...")
@@ -78,7 +80,7 @@ class ModelManager:
             logger.info(f"Meilleur score R2 rÃ©gression : {search.best_score_:.4f}")
             return self.best_model_reg
 
-    def train_classification(self, X, y):
+    def train_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         """EntraÃ®ne et tune un modÃ¨le de classification.
 
         Utilise class_weight='balanced' pour gÃ©rer le dÃ©sÃ©quilibre des classes.
@@ -104,7 +106,7 @@ class ModelManager:
         logger.info(f"Meilleure accuracy classification : {search.best_score_:.4f}")
         return self.best_model_clf
 
-    def train_nn_regression(self, X, y):
+    def train_nn_regression(self, X: pd.DataFrame, y: pd.Series) -> Any:
         """EntraÃ®ne et tune un rÃ©seau de neurones pour la rÃ©gression."""
         logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (RÃ©seau de Neurones)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
@@ -127,7 +129,7 @@ class ModelManager:
         logger.info(f"Meilleur score R2 rÃ©gression NN : {search.best_score_:.4f}")
         return self.best_model_nn_reg
 
-    def train_nn_classification(self, X, y):
+    def train_nn_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         """EntraÃ®ne et tune un rÃ©seau de neurones pour la classification."""
         logger.info("EntraÃ®nement du modÃ¨le de classification (RÃ©seau de Neurones)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
@@ -150,7 +152,7 @@ class ModelManager:
         logger.info(f"Meilleure accuracy classification NN : {search.best_score_:.4f}")
         return self.best_model_nn_clf
 
-    def train_svm_regression(self, X, y):
+    def train_svm_regression(self, X: pd.DataFrame, y: pd.Series) -> Any:
         """EntraÃ®ne un modÃ¨le SVR (Support Vector Regression)."""
         logger.info("EntraÃ®nement du modÃ¨le de rÃ©gression (SVM)...")
         selector = SelectFromModel(RandomForestRegressor(n_estimators=50, random_state=42), threshold="0.5*mean")
@@ -173,7 +175,7 @@ class ModelManager:
         logger.info(f"Meilleur score R2 rÃ©gression SVM : {search.best_score_:.4f}")
         return self.best_model_svm_reg
 
-    def train_svm_classification(self, X, y):
+    def train_svm_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         """EntraÃ®ne un modÃ¨le SVC (Support Vector Classification)."""
         logger.info("EntraÃ®nement du modÃ¨le de classification (SVM)...")
         selector = SelectFromModel(RandomForestClassifier(n_estimators=50, random_state=42), threshold="0.5*mean")
@@ -195,7 +197,7 @@ class ModelManager:
         logger.info(f"Meilleure accuracy classification SVM : {search.best_score_:.4f}")
         return self.best_model_svm_clf
 
-    def save_models(self, path=MODEL_FILE):
+    def save_models(self, path: str = MODEL_FILE) -> None:
         """Sauvegarde les modÃ¨les sur disque."""
         joblib.dump({
             'reg': self.best_model_reg,
@@ -210,7 +212,7 @@ class ModelManager:
         }, path)
         logger.info(f"ModÃ¨les sauvegardÃ©s dans {path}")
 
-    def load_models(self, path=MODEL_FILE):
+    def load_models(self, path: str = MODEL_FILE) -> bool:
         """Charge les modÃ¨les depuis le disque."""
         try:
             dict_models = joblib.load(path)

@@ -6,13 +6,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import logging
+import pandas as pd
 from datetime import datetime
+from typing import Optional, Dict, List, Any
 from src.config import REPORT_FILE
 
 logger = logging.getLogger(__name__)
 
 
-def generer_visualisations(df, buf=None):
+def generer_visualisations(df: pd.DataFrame, buf: Optional[Any] = None) -> None:
     """Génère des graphiques de base.
 
     Parameters
@@ -35,11 +37,11 @@ def generer_visualisations(df, buf=None):
     plt.close(fig)
 
 
-def generer_rapport_markdown(df, metrics_reg, metrics_clf, path=REPORT_FILE,
-                             metrics_nn_reg=None, metrics_nn_clf=None,
-                             metrics_svm_reg=None, metrics_svm_clf=None,
-                             selected_features=None, model_name=None,
-                             target_col=None, threshold=None, grade_cols=None):
+def generer_rapport_markdown(df: pd.DataFrame, metrics_reg: Dict[str, float], metrics_clf: Dict[str, float], path: Optional[str] = REPORT_FILE,
+                             metrics_nn_reg: Optional[Dict[str, float]] = None, metrics_nn_clf: Optional[Dict[str, float]] = None,
+                             metrics_svm_reg: Optional[Dict[str, float]] = None, metrics_svm_clf: Optional[Dict[str, float]] = None,
+                             selected_features: Optional[List[str]] = None, model_name: Optional[str] = None,
+                             target_col: Optional[str] = None, threshold: Optional[float] = None, grade_cols: Optional[List[str]] = None) -> str:
     """
     Génère un rapport final extrêmement détaillé incluant les statistiques
     de cohorte, le prétraitement et le benchmark des modèles.

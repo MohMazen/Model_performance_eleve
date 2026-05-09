@@ -4,6 +4,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import logging
 import numpy as np
+import pandas as pd
+from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ TRADUCTIONS = {
 }
 
 
-def generate_shap_failure_analysis(model_pipeline, X_sample, y_true, seuil=10, buf=None):
+def generate_shap_failure_analysis(model_pipeline: Any, X_sample: pd.DataFrame, y_true: pd.Series, seuil: float = 10.0, buf: Optional[Any] = None) -> Optional[Any]:
     """
     Génère une analyse SHAP spécifique aux élèves en situation d'échec.
     Utilise une palette de couleur rouge pour l'identification des facteurs d'échec.
@@ -113,7 +115,7 @@ def generate_shap_failure_analysis(model_pipeline, X_sample, y_true, seuil=10, b
         return None
 
 
-def generate_shap_analysis(model_pipeline, X_sample, buf=None):
+def generate_shap_analysis(model_pipeline: Any, X_sample: pd.DataFrame, buf: Optional[Any] = None) -> Optional[Any]:
     """
     Génère une analyse d'importance des facteurs en français.
     Gère les pipelines avec ou sans étape de sélection de variables.

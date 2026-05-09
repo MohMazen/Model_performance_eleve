@@ -6,12 +6,14 @@ import pandas as pd
 import numpy as np
 import logging
 import io
+import streamlit as st
+from typing import List, Optional, Dict, Any
 from src.config import DATA_FILE, ID_COLUMNS, GRADE_COLUMNS
 
 logger = logging.getLogger(__name__)
 
 
-def valider_schema(df, colonnes_requises):
+def valider_schema(df: pd.DataFrame, colonnes_requises: List[str]) -> None:
     """Vérifie que les colonnes requises existent dans le DataFrame."""
     manquantes = [col for col in colonnes_requises if col not in df.columns]
     if manquantes:
@@ -19,7 +21,8 @@ def valider_schema(df, colonnes_requises):
     logger.info("Validation du schéma réussie.")
 
 
-def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
+@st.cache_data(show_spinner=False)
+def generer_donnees_synthetiques(n_eleves: int = 300, classes_selectionnees: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Génère un jeu de données synthétiques 100% compatible avec Questionnaire.html.
     """
@@ -195,21 +198,26 @@ def generer_donnees_synthetiques(n_eleves=300, classes_selectionnees=None):
     return df
 
 
-def charger_donnees(chemin):
+@st.cache_data(show_spinner=False)
+def charger_donnees(chemin: str) -> Optional[pd.DataFrame]:
     """Charge les données depuis CSV avec détection automatique du séparateur."""
     try:
         # csv.Sniffer() ou pandas sep=None
         df = pd.read_csv(chemin, sep=None, engine='python', encoding='utf-8-sig')
         # On passe toutes les colonnes en minuscules pour l'insensibilité à la casse
-        df.columns = [c.lower() for c in df.columns]
+        df.columns = [str(c).lower() for c in df.columns]
         logger.info(f"Données chargées ({df.shape[0]} lignes) depuis {chemin} (séparateur détecté)")
         return df
+    except (FileNotFoundError, pd.errors.EmptyDataError) as e:
+        logger.error(f"Fichier introuvable ou vide {chemin}: {e}")
+        return None
     except Exception as e:
         logger.error(f"Erreur de chargement de {chemin}: {e}")
         return None
 
 
-def nettoyer_donnees(df):
+@st.cache_data(show_spinner=False)
+def nettoyer_donnees(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     """Nettoyage des données : suppression colonnes vides et imputation."""
     if df is None: return None
     df_clean = df.copy()

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import logging
 import re
+from typing import Dict, List, Optional, Any
 from src.config import SEUIL_REUSSITE, TARGET_CLF
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ KEYWORDS = {
     'heure_lever': ['lever', 'wakeup', 'wake_up']
 }
 
-def get_column_mapping(df_columns):
+def get_column_mapping(df_columns: List[str]) -> Dict[str, str]:
     """
     Tente de mapper les colonnes du DataFrame aux concepts du modèle.
     Retourne un dictionnaire {concept: colonne_reelle}.
@@ -40,7 +41,7 @@ def get_column_mapping(df_columns):
             if found: break
     return mapping
 
-def add_advanced_features(df, mapping=None):
+def add_advanced_features(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None) -> pd.DataFrame:
     """
     Ajoute des variables calculées et des interactions de manière adaptative.
     mapping: dict optionnel {concept: nom_colonne}
@@ -101,7 +102,7 @@ def add_advanced_features(df, mapping=None):
     return df_feat
 
 
-def parse_heure(v):
+def parse_heure(v: Any) -> float:
     """Convertit '22:30' ou '22h30' en float (22.5)."""
     try:
         if v is None or pd.isna(v):
@@ -117,7 +118,7 @@ def parse_heure(v):
         return 0.0
 
 
-def prenttoyer_horaires(df, mapping=None):
+def prenttoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None) -> pd.DataFrame:
     """Convertit les colonnes horaires en numérique."""
     df_h = df.copy()
     if mapping is None:
