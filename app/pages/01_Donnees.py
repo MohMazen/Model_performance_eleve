@@ -23,7 +23,7 @@ from sklearn.model_selection import train_test_split
 from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG, MODEL_FILE, SEUIL_REUSSITE
 from src.data_utils import charger_donnees, generer_donnees_synthetiques, nettoyer_donnees, valider_schema
 from src.explainability import generate_shap_analysis, generate_shap_failure_analysis
-from src.features import add_advanced_features, prenttoyer_horaires, get_column_mapping
+from src.features import add_advanced_features, nettoyer_horaires, get_column_mapping
 from src.models import ModelManager
 from src.reporting import generer_rapport_markdown
 from app.utils_st import _get, _set, cached_generer_donnees

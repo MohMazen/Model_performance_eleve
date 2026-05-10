@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.features import parse_heure, add_advanced_features, prenttoyer_horaires
+from src.features import parse_heure, add_advanced_features, nettoyer_horaires
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees
 
 
