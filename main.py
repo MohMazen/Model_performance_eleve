@@ -67,56 +67,77 @@ def main():
         X, y_reg, y_clf, test_size=0.2, random_state=42
     )
 
-    # 5. Modélisation
+    # 5. Modélisation : train_all entraîne les 6 modèles (XGBoost, RF, MLP×2,
+    #    SVM×2) et sélectionne automatiquement le meilleur en régression
+    #    et en classification via les scores CV.
     mm = ModelManager()
     mm.prepare_pipeline(X_train)
+    mm.feature_columns = list(X_train.columns)
 
-    model_reg = mm.train_regression(X_train, y_reg_train)
-    model_clf = mm.train_classification(X_train, y_clf_train)
-    model_nn_reg = mm.train_nn_regression(X_train, y_reg_train)
-    model_nn_clf = mm.train_nn_classification(X_train, y_clf_train)
+    cv_scores = mm.train_all(X_train, y_reg_train, y_clf_train, include_svm=True)
+    logger.info(f"Scores CV de tous les modèles : {cv_scores}")
 
-    # 6. Explicabilité (Placée avant les prédictions comme demandé)
+    # Modèles sélectionnés (best_overall_*) pour les usages downstream
+    model_reg = mm.best_overall_reg
+    model_clf = mm.best_overall_clf
+
+    # 6. Explicabilité — basée sur le meilleur modèle de régression.
     sample_size = min(50, len(X_test))
     generate_shap_analysis(model_reg, X_test.iloc[:sample_size])
-    generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size], y_reg_test.iloc[:sample_size])
+    # Filtrage selon les PRÉDICTIONS du modèle (correctif point 5).
+    generate_shap_failure_analysis(model_reg, X_test.iloc[:sample_size],
+                                    y_true=y_reg_test.iloc[:sample_size],
+                                    use_predictions=True)
 
-    # 7. Évaluation sur les données de TEST (jamais vues à l'entraînement)
-    y_pred_reg = model_reg.predict(X_test)
-    y_pred_clf = model_clf.predict(X_test)
-    y_pred_nn_reg = model_nn_reg.predict(X_test)
-    y_pred_nn_clf = model_nn_clf.predict(X_test)
+    # 7. Évaluation des 6 modèles sur les données de TEST.
+    def _metrics_reg(y_true, y_pred):
+        return {
+            'r2': r2_score(y_true, y_pred),
+            'mae': mean_absolute_error(y_true, y_pred),
+            'rmse': np.sqrt(mean_squared_error(y_true, y_pred)),
+        }
 
-    metrics_reg = {
-        'r2': r2_score(y_reg_test, y_pred_reg),
-        'mae': mean_absolute_error(y_reg_test, y_pred_reg),
-        'rmse': np.sqrt(mean_squared_error(y_reg_test, y_pred_reg))
-    }
-    metrics_clf = {
-        'accuracy': accuracy_score(y_clf_test, y_pred_clf) * 100,
-        'f1': f1_score(y_clf_test, y_pred_clf, zero_division=0),
-        'precision': precision_score(y_clf_test, y_pred_clf, zero_division=0),
-        'recall': recall_score(y_clf_test, y_pred_clf, zero_division=0)
-    }
-    metrics_nn_reg = {
-        'r2': r2_score(y_reg_test, y_pred_nn_reg),
-        'mae': mean_absolute_error(y_reg_test, y_pred_nn_reg),
-        'rmse': np.sqrt(mean_squared_error(y_reg_test, y_pred_nn_reg))
-    }
-    metrics_nn_clf = {
-        'accuracy': accuracy_score(y_clf_test, y_pred_nn_clf) * 100,
-        'f1': f1_score(y_clf_test, y_pred_nn_clf, zero_division=0),
-        'precision': precision_score(y_clf_test, y_pred_nn_clf, zero_division=0),
-        'recall': recall_score(y_clf_test, y_pred_nn_clf, zero_division=0)
-    }
+    def _metrics_clf(y_true, y_pred):
+        return {
+            'accuracy': accuracy_score(y_true, y_pred) * 100,
+            'f1': f1_score(y_true, y_pred, zero_division=0),
+            'precision': precision_score(y_true, y_pred, zero_division=0),
+            'recall': recall_score(y_true, y_pred, zero_division=0),
+        }
 
-    logger.info(f"Métriques régression : R²={metrics_reg['r2']:.4f}, MAE={metrics_reg['mae']:.4f}")
-    logger.info(f"Métriques classification : Accuracy={metrics_clf['accuracy']:.2f}%, F1={metrics_clf['f1']:.4f}")
-    logger.info(f"Métriques NN régression : R²={metrics_nn_reg['r2']:.4f}, MAE={metrics_nn_reg['mae']:.4f}")
-    logger.info(f"Métriques NN classification : Accuracy={metrics_nn_clf['accuracy']:.2f}%, F1={metrics_nn_clf['f1']:.4f}")
+    metrics_reg = _metrics_reg(y_reg_test, mm.best_model_reg.predict(X_test))
+    metrics_clf = _metrics_clf(y_clf_test, mm.best_model_clf.predict(X_test))
+    metrics_nn_reg = _metrics_reg(y_reg_test, mm.best_model_nn_reg.predict(X_test))
+    metrics_nn_clf = _metrics_clf(y_clf_test, mm.best_model_nn_clf.predict(X_test))
+    metrics_svm_reg = _metrics_reg(y_reg_test, mm.best_model_svm_reg.predict(X_test))
+    metrics_svm_clf = _metrics_clf(y_clf_test, mm.best_model_svm_clf.predict(X_test))
 
+    logger.info(f"XGBoost régression  : R²={metrics_reg['r2']:.4f}, MAE={metrics_reg['mae']:.4f}")
+    logger.info(f"RF classification   : Acc={metrics_clf['accuracy']:.2f}%, F1={metrics_clf['f1']:.4f}")
+    logger.info(f"MLP régression      : R²={metrics_nn_reg['r2']:.4f}, MAE={metrics_nn_reg['mae']:.4f}")
+    logger.info(f"MLP classification  : Acc={metrics_nn_clf['accuracy']:.2f}%, F1={metrics_nn_clf['f1']:.4f}")
+    logger.info(f"SVR régression      : R²={metrics_svm_reg['r2']:.4f}, MAE={metrics_svm_reg['mae']:.4f}")
+    logger.info(f"SVC classification  : Acc={metrics_svm_clf['accuracy']:.2f}%, F1={metrics_svm_clf['f1']:.4f}")
 
-    # 8. Sauvegarde et Rapport
+    # 8. Audit fairness sur le test set (point 7).
+    try:
+        from src.fairness import audit_fairness, format_fairness_report
+        df_test_for_audit = X_test.copy()
+        df_test_for_audit[TARGET_REG] = y_reg_test.values
+        df_test_for_audit[TARGET_CLF] = y_clf_test.values
+        df_test_for_audit['y_pred_clf'] = mm.best_model_clf.predict(X_test)
+        df_test_for_audit['y_pred_reg'] = mm.best_model_reg.predict(X_test)
+
+        for sensitive in ('genre', 'classe'):
+            if sensitive in df_test_for_audit.columns:
+                audit = audit_fairness(df_test_for_audit, sensitive_col=sensitive,
+                                       y_true_clf=TARGET_CLF, y_pred_clf='y_pred_clf')
+                logger.info(f"Audit fairness ({sensitive}) :\n"
+                            + format_fairness_report(audit))
+    except ImportError:
+        logger.warning("Module fairness indisponible, audit ignoré.")
+
+    # 9. Sauvegarde et Rapport
     mm.save_models()
     generer_rapport_markdown(df, metrics_reg, metrics_clf,
                              metrics_nn_reg=metrics_nn_reg,
