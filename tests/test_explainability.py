@@ -66,24 +66,50 @@ class TestGenerateShapAnalysis:
 
 
 class TestGenerateShapFailureAnalysis:
-    def test_returns_none_when_no_failure(self, trained_pipeline):
-        """Aucun élève en échec → None retourné, pas de crash."""
+    def test_returns_none_when_no_failure_legacy_mode(self, trained_pipeline):
+        """Mode legacy (use_predictions=False) : filtrage sur y_true."""
         pipeline, X, _ = trained_pipeline
         # Cible artificielle entièrement >= seuil → aucun échec.
         y_all_pass = pd.Series([20.0] * len(X), index=X.index)
         buf = io.BytesIO()
         result = generate_shap_failure_analysis(pipeline, X.iloc[:20],
-                                                y_all_pass.iloc[:20], seuil=10.0, buf=buf)
+                                                y_all_pass.iloc[:20],
+                                                seuil=10.0, buf=buf,
+                                                use_predictions=False)
         assert result is None
 
-    def test_returns_shap_values_when_failures_exist(self, trained_pipeline):
+    def test_returns_none_when_no_failure_predicted(self, trained_pipeline):
+        """Mode par défaut : filtrage sur prédictions du modèle.
+        Avec un seuil très élevé hors plage de prédictions (-100), aucun élève
+        ne peut être 'prédit en échec', donc résultat None."""
+        pipeline, X, _ = trained_pipeline
+        buf = io.BytesIO()
+        result = generate_shap_failure_analysis(pipeline, X.iloc[:20],
+                                                seuil=-100.0, buf=buf,
+                                                use_predictions=True)
+        assert result is None
+
+    def test_returns_shap_values_when_predictions_below_threshold(self, trained_pipeline):
+        """Mode par défaut : seuil élevé → la majorité des élèves sont
+        prédits 'en échec' → SHAP values calculées."""
+        pipeline, X, _ = trained_pipeline
+        buf = io.BytesIO()
+        # Seuil très haut pour garantir que des prédictions tombent en dessous.
+        result = generate_shap_failure_analysis(pipeline, X.iloc[:20],
+                                                seuil=20.0, buf=buf,
+                                                use_predictions=True)
+        assert result is not None
+
+    def test_legacy_mode_returns_shap_values_when_failures_exist(self, trained_pipeline):
         pipeline, X, y_reg = trained_pipeline
         # Forcer au moins quelques échecs en abaissant artificiellement la cible.
         y_failures = y_reg.copy()
         y_failures.iloc[:5] = 5.0
         buf = io.BytesIO()
         result = generate_shap_failure_analysis(pipeline, X.iloc[:20],
-                                                y_failures.iloc[:20], seuil=10.0, buf=buf)
+                                                y_failures.iloc[:20],
+                                                seuil=10.0, buf=buf,
+                                                use_predictions=False)
         assert result is not None
 
 

@@ -33,57 +33,106 @@ TRADUCTIONS = {
 }
 
 
-def generate_shap_failure_analysis(model_pipeline: Any, X_sample: pd.DataFrame, y_true: pd.Series, seuil: float = 10.0, buf: Optional[Any] = None) -> Optional[Any]:
+def generate_shap_failure_analysis(model_pipeline: Any, X_sample: pd.DataFrame,
+                                   y_true: Optional[pd.Series] = None,
+                                   seuil: float = 10.0,
+                                   buf: Optional[Any] = None,
+                                   use_predictions: bool = True) -> Optional[Any]:
     """
-    Génère une analyse SHAP spécifique aux élèves en situation d'échec.
-    Utilise une palette de couleur rouge pour l'identification des facteurs d'échec.
+    Génère une analyse SHAP spécifique aux élèves prédits en échec.
+
+    Par défaut (use_predictions=True), filtre les élèves selon la PRÉDICTION
+    du modèle, pas la vérité terrain — c'est ce qu'on veut pour expliquer
+    le comportement du modèle. Si use_predictions=False, le filtrage se fait
+    sur y_true (ancien comportement, gardé pour compatibilité).
+
+    Le fallback KernelExplainer utilise désormais un échantillon de
+    background représentatif (jusqu'à 20 lignes via shap.sample) au lieu
+    d'un seul point qui produit des valeurs SHAP invalides.
     """
     logger.info("Calcul des valeurs SHAP pour les facteurs d'échec...")
 
     try:
-        # Filtrer uniquement les élèves en échec (note < seuil)
-        fail_mask = y_true < seuil
-        if not fail_mask.any():
-            logger.warning("Aucun élève en échec dans l'échantillon pour l'analyse SHAP.")
+        # Sélection des élèves en échec : prédiction par défaut, sinon y_true.
+        if use_predictions:
+            try:
+                preds = model_pipeline.predict(X_sample)
+                fail_mask = preds < seuil
+            except Exception as e_pred:
+                logger.warning(f"Impossible de prédire pour filtrer (échec={e_pred}). "
+                               "Fallback sur y_true.")
+                if y_true is None:
+                    logger.warning("Pas de y_true fourni, abandon.")
+                    return None
+                fail_mask = (y_true < seuil).values
+        else:
+            if y_true is None:
+                logger.warning("y_true requis quand use_predictions=False.")
+                return None
+            fail_mask = (y_true < seuil).values
+
+        if not np.any(fail_mask):
+            logger.warning("Aucun élève prédit en échec dans l'échantillon.")
             return None
 
-        X_fail = X_sample[fail_mask]
-        
+        X_fail = X_sample.loc[fail_mask] if hasattr(X_sample, 'loc') else X_sample[fail_mask]
+
         preprocessor = model_pipeline.named_steps['pre']
         model = model_pipeline.named_steps['model']
 
-        # Preprocessing
-        X_transformed = preprocessor.transform(X_fail)
+        # Preprocessing — on utilise X_sample complet pour le background et
+        # X_fail pour les SHAP values, afin que l'explainer ait une référence
+        # représentative de la distribution complète.
+        X_bg_transformed = preprocessor.transform(X_sample)
+        X_fail_transformed = preprocessor.transform(X_fail)
+
         cat_feature_names = preprocessor.named_transformers_['cat'].named_steps['onehot'].get_feature_names_out()
         num_feature_names = preprocessor.transformers_[0][2]
         all_feature_names = list(num_feature_names) + list(cat_feature_names)
 
         if 'select' in model_pipeline.named_steps:
             selector = model_pipeline.named_steps['select']
-            X_transformed = selector.transform(X_transformed)
+            X_bg_transformed = selector.transform(X_bg_transformed)
+            X_fail_transformed = selector.transform(X_fail_transformed)
             selected_mask = selector.get_support()
             all_feature_names = [name for name, sel in zip(all_feature_names, selected_mask) if sel]
 
         feature_names_fr = [TRADUCTIONS.get(name, name) for name in all_feature_names]
 
-        if hasattr(X_transformed, 'toarray'):
-            X_transformed = X_transformed.toarray()
-        elif hasattr(X_transformed, 'todense'):
-            X_transformed = np.asarray(X_transformed.todense())
+        for arr_name in ('X_bg_transformed', 'X_fail_transformed'):
+            arr = locals()[arr_name]
+            if hasattr(arr, 'toarray'):
+                locals()[arr_name] = arr.toarray()
+            elif hasattr(arr, 'todense'):
+                locals()[arr_name] = np.asarray(arr.todense())
+        # Reconstruction explicite après modification de locals().
+        if hasattr(X_bg_transformed, 'toarray'):
+            X_bg_transformed = X_bg_transformed.toarray()
+        if hasattr(X_fail_transformed, 'toarray'):
+            X_fail_transformed = X_fail_transformed.toarray()
 
         try:
-            # Explainer
             model_type = type(model).__name__
             if model_type in ('XGBRegressor', 'XGBClassifier', 'RandomForestRegressor', 'RandomForestClassifier'):
                 explainer = shap.TreeExplainer(model)
             else:
-                bg_size = min(20, X_transformed.shape[0])
-                explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size] if X_transformed.shape[0] > 0 else X_transformed)
+                # Background représentatif : k-means summary si shap.sample dispo,
+                # sinon échantillon aléatoire jusqu'à 20 lignes.
+                bg_size = min(20, X_bg_transformed.shape[0])
+                if hasattr(shap, 'sample'):
+                    background = shap.sample(X_bg_transformed, bg_size, random_state=42)
+                else:
+                    background = X_bg_transformed[:bg_size]
+                explainer = shap.KernelExplainer(model.predict, background)
         except Exception as e_explainer:
-            logger.warning(f"Explainer SHAP (échec) échoué : {e_explainer}. Fallback.")
-            explainer = shap.KernelExplainer(model.predict, X_transformed[:1] if X_transformed.shape[0] > 0 else X_transformed)
+            logger.warning(f"Explainer SHAP (échec) échoué : {e_explainer}. Fallback KernelExplainer.")
+            bg_size = min(20, X_bg_transformed.shape[0])
+            background = X_bg_transformed[:bg_size] if bg_size > 0 else X_bg_transformed
+            explainer = shap.KernelExplainer(model.predict, background)
 
-        shap_values = explainer(X_transformed)
+        shap_values = explainer(X_fail_transformed)
+        # Pour rester compatible avec shap.summary_plot ci-dessous.
+        X_transformed = X_fail_transformed
 
         # Graphique rouge pour l'échec
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -160,12 +209,23 @@ def generate_shap_analysis(model_pipeline: Any, X_sample: pd.DataFrame, buf: Opt
             if model_type in ('XGBRegressor', 'XGBClassifier', 'RandomForestRegressor', 'RandomForestClassifier'):
                 explainer = shap.TreeExplainer(model)
             else:
-                # Pour SVM, MLP et autres : KernelExplainer avec model.predict
+                # Pour SVM, MLP et autres : KernelExplainer avec un background
+                # représentatif (échantillon, jamais 1 seul point).
                 bg_size = min(20, X_transformed.shape[0])
-                explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size] if X_transformed.shape[0] > 0 else X_transformed)
+                if bg_size < 5:
+                    logger.warning(f"Background SHAP trop petit ({bg_size}). Valeurs peu fiables.")
+                if hasattr(shap, 'sample') and X_transformed.shape[0] > bg_size:
+                    background = shap.sample(X_transformed, bg_size, random_state=42)
+                else:
+                    background = X_transformed[:bg_size] if X_transformed.shape[0] > 0 else X_transformed
+                explainer = shap.KernelExplainer(model.predict, background)
         except Exception as e_explainer:
             logger.warning(f"Explainer SHAP échoué : {e_explainer}. Fallback sur KernelExplainer.")
-            explainer = shap.KernelExplainer(model.predict, X_transformed[:1] if X_transformed.shape[0] > 0 else X_transformed)
+            # Fallback corrigé : on prend toujours un background représentatif,
+            # JAMAIS un seul point (qui produirait des SHAP values invalides).
+            bg_size = min(20, X_transformed.shape[0])
+            background = X_transformed[:bg_size] if bg_size > 0 else X_transformed
+            explainer = shap.KernelExplainer(model.predict, background)
 
         shap_values = explainer(X_transformed)
 
@@ -231,7 +291,11 @@ def get_individual_shap_values(model_pipeline: Any, X_sample: pd.DataFrame,
             explainer = shap.TreeExplainer(model)
         else:
             bg_size = min(20, X_transformed.shape[0])
-            explainer = shap.KernelExplainer(model.predict, X_transformed[:bg_size])
+            if hasattr(shap, 'sample') and X_transformed.shape[0] > bg_size:
+                background = shap.sample(X_transformed, bg_size, random_state=42)
+            else:
+                background = X_transformed[:bg_size]
+            explainer = shap.KernelExplainer(model.predict, background)
 
         shap_vals = explainer(X_transformed)
 

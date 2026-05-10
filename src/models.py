@@ -137,7 +137,7 @@ class ModelManager:
         ])
 
     def _train(self, key: str, X: pd.DataFrame, y: pd.Series,
-               n_iter: int = 10, n_splits: int = 3) -> Any:
+               n_iter: int = 10, n_splits: int = 5) -> Any:
         """
         Entraîne un modèle du catalogue par recherche d'hyperparamètres.
         Utilise StratifiedKFold pour la classification (évite les plis sans échec).
@@ -175,7 +175,7 @@ class ModelManager:
             pipeline = self._build_pipeline('regression', MODEL_CATALOG['reg']['estimator']())
             search = RandomizedSearchCV(
                 pipeline, MODEL_CATALOG['reg']['param_dist'],
-                n_iter=10, cv=KFold(n_splits=3, shuffle=True, random_state=42),
+                n_iter=10, cv=KFold(n_splits=5, shuffle=True, random_state=42),
                 scoring='r2', random_state=42,
             )
             search.fit(X, y)
