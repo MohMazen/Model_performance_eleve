@@ -14,7 +14,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees
-from src.features import add_advanced_features, prenttoyer_horaires
+from src.features import add_advanced_features, nettoyer_horaires
 from src.early_warning import EarlyWarningSystem, RISK_ZONES
 from src.clustering import StudentProfiler
 from src.temporal import TemporalAnalyzer, generer_donnees_multi_periodes
@@ -27,7 +27,7 @@ def df_feat():
     """DataFrame avec features calculées."""
     df = generer_donnees_synthetiques(n_eleves=60)
     df = nettoyer_donnees(df)
-    df = prenttoyer_horaires(df)
+    df = nettoyer_horaires(df)
     df = add_advanced_features(df)
     return df
 

@@ -55,37 +55,95 @@ class TemporalAnalyzer:
 
     def compute_trends(self, df_multi: pd.DataFrame) -> pd.DataFrame:
         """
-        Calcule la pente de tendance par élève.
+        Calcule la pente de tendance par élève (implémentation vectorisée).
 
-        Returns DataFrame avec colonnes : id_col, slope, intercept, r_value, p_value, trend_label
+        Utilise la formule analytique de la régression linéaire OLS appliquée
+        en groupby pour éviter une boucle Python par élève. Le test de Student
+        sur la pente fournit la p-value sans appeler scipy.stats.linregress
+        à chaque itération.
+
+        Returns DataFrame avec colonnes : id_col, slope, intercept, r_value,
+        p_value, n_periods, trend_label, first_value, last_value, delta.
         """
-        logger.info("Calcul des tendances de performance par élève…")
+        from scipy.stats import t as student_t
+
+        logger.info("Calcul des tendances de performance par élève (vectorisé)…")
         if self.id_col not in df_multi.columns or self.target not in df_multi.columns:
             raise ValueError(f"Colonnes requises manquantes : {self.id_col}, {self.target}")
 
-        results = []
-        for student_id, group in df_multi.groupby(self.id_col):
-            group_sorted = group.sort_values("periode_order")
-            values = group_sorted[self.target].dropna().values
-            if len(values) < 2:
-                results.append({self.id_col: student_id, "slope": 0.0, "intercept": values[0] if len(values) else 0,
-                                "r_value": 0.0, "p_value": 1.0, "n_periods": len(values), "trend_label": "➡️ Stable"})
-                continue
-            x = np.arange(len(values))
-            slope, intercept, r_value, p_value, _ = stats.linregress(x, values)
-            if slope > 0.5 and p_value < 0.1:
-                trend = "↗️ Progression"
-            elif slope < -0.5 and p_value < 0.1:
-                trend = "↘️ Régression"
-            else:
-                trend = "➡️ Stable"
-            results.append({self.id_col: student_id, "slope": round(slope, 3), "intercept": round(intercept, 2),
-                            "r_value": round(r_value, 3), "p_value": round(p_value, 4),
-                            "n_periods": len(values), "trend_label": trend,
-                            "last_value": round(values[-1], 2), "first_value": round(values[0], 2),
-                            "delta": round(values[-1] - values[0], 2)})
+        # Préparation : tri stable par élève puis par période, retrait des NaN.
+        df = (
+            df_multi[[self.id_col, "periode_order", self.target]]
+            .dropna(subset=[self.target])
+            .sort_values([self.id_col, "periode_order"])
+            .copy()
+        )
+        # Index 0..n-1 par élève (axe x de la régression).
+        df["x"] = df.groupby(self.id_col).cumcount()
 
-        df_trends = pd.DataFrame(results)
+        # Statistiques par élève via aggregations vectorisées.
+        g = df.groupby(self.id_col, sort=False)
+        n = g["x"].size().rename("n")
+        sum_x = g["x"].sum().rename("sx")
+        sum_y = g[self.target].sum().rename("sy")
+        sum_xy = g.apply(lambda d: float((d["x"] * d[self.target]).sum())).rename("sxy")
+        sum_xx = g.apply(lambda d: float((d["x"] ** 2).sum())).rename("sxx")
+        sum_yy = g.apply(lambda d: float((d[self.target] ** 2).sum())).rename("syy")
+        first_value = g[self.target].first().rename("first_value")
+        last_value = g[self.target].last().rename("last_value")
+
+        stats_df = pd.concat([n, sum_x, sum_y, sum_xy, sum_xx, sum_yy,
+                              first_value, last_value], axis=1)
+
+        # Pente OLS : (n·Σxy − Σx·Σy) / (n·Σxx − (Σx)²)
+        denom_x = stats_df["n"] * stats_df["sxx"] - stats_df["sx"] ** 2
+        numer = stats_df["n"] * stats_df["sxy"] - stats_df["sx"] * stats_df["sy"]
+        slope = np.where(denom_x > 0, numer / denom_x, 0.0)
+        intercept = (stats_df["sy"] - slope * stats_df["sx"]) / stats_df["n"]
+
+        # Coefficient de corrélation r.
+        denom_y = stats_df["n"] * stats_df["syy"] - stats_df["sy"] ** 2
+        denom_r = np.sqrt(denom_x * denom_y)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r_value = np.where(denom_r > 0, numer / denom_r, 0.0)
+        r_value = np.clip(r_value, -1.0, 1.0)
+
+        # p-value : test bilatéral sur la pente (n-2 degrés de liberté).
+        # On force p=1.0 quand n<3 ou |r|=1 (cas dégénéré sans variance résiduelle).
+        df_resid = (stats_df["n"] - 2).clip(lower=1)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t_stat = r_value * np.sqrt(df_resid / np.maximum(1 - r_value ** 2, 1e-12))
+            p_value = 2 * (1 - student_t.cdf(np.abs(t_stat), df_resid))
+        p_value = np.where(stats_df["n"] >= 3, p_value, 1.0)
+        p_value = np.where(np.isfinite(p_value), p_value, 1.0)
+
+        # Étiquette de tendance.
+        progression = (slope > 0.5) & (p_value < 0.1)
+        regression = (slope < -0.5) & (p_value < 0.1)
+        trend_label = np.where(progression, "↗️ Progression",
+                       np.where(regression, "↘️ Régression", "➡️ Stable"))
+
+        # Cas n < 2 : tendance forcée à "Stable", slope=0.
+        too_short = stats_df["n"] < 2
+        slope = np.where(too_short, 0.0, slope)
+        intercept = np.where(too_short, stats_df["first_value"].fillna(0).values, intercept)
+        r_value = np.where(too_short, 0.0, r_value)
+        p_value = np.where(too_short, 1.0, p_value)
+        trend_label = np.where(too_short, "➡️ Stable", trend_label)
+
+        df_trends = pd.DataFrame({
+            self.id_col: stats_df.index,
+            "slope": np.round(slope, 3),
+            "intercept": np.round(intercept, 2),
+            "r_value": np.round(r_value, 3),
+            "p_value": np.round(p_value, 4),
+            "n_periods": stats_df["n"].astype(int).values,
+            "trend_label": trend_label,
+            "first_value": np.round(stats_df["first_value"].values, 2),
+            "last_value": np.round(stats_df["last_value"].values, 2),
+            "delta": np.round((stats_df["last_value"] - stats_df["first_value"]).values, 2),
+        }).reset_index(drop=True)
+
         logger.info(f"Tendances calculées pour {len(df_trends)} élèves.")
         return df_trends
 

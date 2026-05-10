@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees
-from src.features import add_advanced_features, prenttoyer_horaires
+from src.features import add_advanced_features, nettoyer_horaires
 from src.config import COLS_TO_DROP, TARGET_REG, TARGET_CLF
 from src.models import ModelManager
 
@@ -22,7 +22,7 @@ def prepared_data():
     """Prépare les données une seule fois pour tous les tests du module."""
     df = generer_donnees_synthetiques(n_eleves=80)
     df = nettoyer_donnees(df)
-    df = prenttoyer_horaires(df)
+    df = nettoyer_horaires(df)
     df = add_advanced_features(df)
 
     cols_drop = [c for c in COLS_TO_DROP if c in df.columns]

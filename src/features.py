@@ -129,8 +129,3 @@ def nettoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None
         if col and col in df_h.columns:
             df_h[f"{col}_num"] = df_h[col].apply(parse_heure)
     return df_h
-
-
-# Alias de compatibilité ascendante — BUG#4 fix (typo originelle conservée temporairement)
-# Utiliser nettoyer_horaires dans les nouveaux codes
-prenttoyer_horaires = nettoyer_horaires
