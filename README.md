@@ -56,9 +56,14 @@ Model_performance_eleve/
 ├── outputs/                        # Fichiers générés (modèles, logs, rapports)
 └── tests/
     ├── __init__.py
-    ├── test_features.py            # Tests features & data_utils
-    ├── test_models.py              # Tests modèles ML
-    └── test_v3_modules.py          # 🆕 Tests v3.0 (21 tests)
+    ├── test_api.py                 # Tests des endpoints API REST
+    ├── test_data_leakage.py        # Tests anti-fuite de données (Data Leakage)
+    ├── test_explainability.py      # Tests du module SHAP et explicabilité
+    ├── test_fairness.py            # Tests d'équité et de biais
+    ├── test_features.py            # Tests du feature engineering
+    ├── test_models.py              # Tests d'entraînement des modèles ML
+    ├── test_temporal_vectorized.py # Tests de performance sur l'analyse temporelle
+    └── test_v3_modules.py          # 🆕 Tests v3.0 (alerte, clustering, recommandations)
 ```
 
 ## 🔧 Installation
@@ -109,6 +114,7 @@ python main.py
 ```
 
 ### Lancer les tests unitaires
+Une suite exhaustive de **90 tests** est disponible pour garantir la robustesse du code métier, l'absence de fuite de données et le bon fonctionnement de l'API.
 ```bash
 python -m pytest tests/ -v
 ```
