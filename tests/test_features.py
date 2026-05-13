@@ -68,13 +68,15 @@ class TestAddAdvancedFeatures:
 
 
 class TestNettoyerDonnees:
-    def test_pas_de_nan_apres_nettoyage(self):
+    def test_nan_preserves_apres_nettoyage(self):
+        """nettoyer_donnees ne doit plus imputer (l'imputation est déléguée
+        au pipeline sklearn pour éviter une fuite de données avant le split)."""
         df = generer_donnees_synthetiques(n_eleves=100)
-        # Introduire des NaN
         df.loc[0:5, 'heures_etude_soir'] = np.nan
         df.loc[3:7, 'classe'] = np.nan
         df_clean = nettoyer_donnees(df)
-        assert df_clean.isnull().sum().sum() == 0
+        assert df_clean['heures_etude_soir'].isna().any()
+        assert df_clean['classe'].isna().any()
 
     def test_retourne_none_si_entree_none(self):
         assert nettoyer_donnees(None) is None

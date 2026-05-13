@@ -94,7 +94,7 @@ with tab_ind:
         col1, col2, col3 = st.columns(3)
         with col1:
             input_data['heures_etude_soir'] = st.slider("Heures d'étude / soir", 0.0, 10.0, 3.0, 0.5)
-            input_data['interet_maths'] = st.slider("Intérêt pour les Maths (0-10)", 0, 10, 7)
+            input_data['motivation_maths'] = st.slider("Motivation pour les Maths (0-10)", 0, 10, 7)
             input_data['heures_sommeil'] = st.slider("Heures de sommeil", 4.0, 11.0, 8.0, 0.5)
             input_data['stress_personnel'] = st.slider("Niveau de stress personnel (0-4)", 0, 4, 1)
             input_data['perseverance'] = st.slider("Niveau de persévérance (1-5)", 1, 5, 3)

@@ -14,10 +14,12 @@ KEYWORDS = {
     'reseaux': ['reseaux', 'social', 'instagram', 'tiktok', 'facebook', 'snapchat'],
     'streaming': ['streaming', 'netflix', 'youtube', 'disney', 'video'],
     'sommeil': ['sommeil', 'dodo', 'sleep', 'repos'],
-    'etude': ['etude', 'devoirs', 'travail', 'study', 'soir'],
-    'stress': ['stress', 'anxiete', 'pression', 'personnel'],
+    'etude': ['etude_soir', 'etude', 'devoirs', 'travail', 'study'],
+    # 'stress_personnel' avant 'stress' pour privilégier la colonne agrégée
+    # (issue de stress1 + stress2) plutôt qu'un des deux items isolés.
+    'stress': ['stress_personnel', 'stress', 'anxiete', 'pression'],
     'motivation': ['motivation', 'interet', 'envie', 'engagement'],
-    'note_moyenne': ['moyenne', 'note_moyenne', 'grade_avg', 'resultat'],
+    'note_moyenne': ['note_moyenne', 'moyenne', 'grade_avg', 'resultat'],
     'heure_coucher': ['coucher', 'bedtime', 'sleep_at'],
     'heure_lever': ['lever', 'wakeup', 'wake_up']
 }
