@@ -216,26 +216,23 @@ def charger_donnees(chemin: str) -> Optional[pd.DataFrame]:
 
 
 def nettoyer_donnees(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
-    """Nettoyage des données : suppression colonnes vides et imputation."""
-    if df is None: return None
+    """
+    Nettoyage structurel des données : suppression des colonnes entièrement vides.
+
+    L'imputation des valeurs manquantes (médiane / mode) est intentionnellement
+    absente ici. Elle est prise en charge par le pipeline sklearn (SimpleImputer
+    dans prepare_pipeline), ce qui garantit que les statistiques d'imputation
+    sont apprises exclusivement sur le train set et jamais sur le test set
+    (absence de fuite de données par contamination du prétraitement).
+    """
+    if df is None:
+        return None
     df_clean = df.copy()
-    
-    # 1. Suppression des colonnes 100% vides
+
+    # Suppression des colonnes 100 % vides (pas de valeur utilisable).
     cols_vides = [c for c in df_clean.columns if df_clean[c].isna().all()]
     if cols_vides:
         logger.info(f"Suppression des colonnes 100% vides : {cols_vides}")
         df_clean = df_clean.drop(columns=cols_vides)
 
-    # 2. Imputation numérique (médiane)
-    for col in df_clean.select_dtypes(include=[np.number]).columns:
-        if df_clean[col].isna().any():
-            df_clean[col] = df_clean[col].fillna(df_clean[col].median())
-            
-    # 3. Imputation catégorielle (mode)
-    for col in df_clean.select_dtypes(include=['object', 'string']).columns:
-        if df_clean[col].isna().any():
-            modes = df_clean[col].mode()
-            fill_val = modes[0] if not modes.empty else ""
-            df_clean[col] = df_clean[col].fillna(fill_val)
-            
     return df_clean
