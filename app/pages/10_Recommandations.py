@@ -11,7 +11,7 @@ import streamlit as st
 logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.recommendations import RecommendationEngine
+from src.recommendations import RecommendationEngine, CORRELATION_DISCLAIMER
 from src.explainability import get_individual_shap_values
 from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG
 from app.utils_st import _get, _set
@@ -35,6 +35,7 @@ tab_reco, tab_sim = st.tabs(["📋 Recommandations", "🔮 Simulateur What-If"])
 
 with tab_reco:
     st.subheader("Recommandations individuelles basées sur SHAP")
+    st.info(CORRELATION_DISCLAIMER)
 
     # Sélection de l'élève
     eleve_options = df_feat["nom"].tolist() if "nom" in df_feat.columns else [f"Élève {i}" for i in range(len(df_feat))]
@@ -102,7 +103,8 @@ with tab_reco:
                         if rec.get("suggested_value") is not None:
                             st.metric("Objectif", f"{rec['suggested_value']:.1f}{rec.get('unit', '')}")
                     with col_c3:
-                        st.metric("Impact SHAP", f"{rec['shap_impact']:+.3f}")
+                        st.metric("Corr. SHAP", f"{rec['shap_impact']:+.3f}",
+                              help="Corrélation SHAP avec la note prédite. Ne reflète pas une relation causale.")
                 st.markdown("---")
 
         # Graphique d'impact
@@ -117,8 +119,8 @@ with tab_reco:
                 textposition="outside",
             ))
             fig_impact.update_layout(
-                title="Impact SHAP des facteurs actionnables",
-                xaxis_title="Impact sur la note prédite",
+                title="Corrélation SHAP des facteurs actionnables (corrélation ≠ causalité)",
+                xaxis_title="Corrélation SHAP avec la note prédite",
                 yaxis_title="",
                 height=300 + len(recos) * 30,
             )
@@ -141,6 +143,11 @@ with tab_reco:
 with tab_sim:
     st.subheader("🔮 Simulateur What-If")
     st.markdown("Modifiez un paramètre et observez l'impact sur la prédiction en temps réel.")
+    st.warning(
+        "**Limite du simulateur** : les variations affichées reflètent la réponse "
+        "du modèle statistique, pas un effet causal réel. Un élève qui dormirait "
+        "davantage ne verrait pas nécessairement sa note progresser du même montant."
+    )
 
     eleve_options_sim = df_feat["nom"].tolist() if "nom" in df_feat.columns else [f"Élève {i}" for i in range(len(df_feat))]
     sel_idx_sim = st.selectbox("Élève", range(len(eleve_options_sim[:100])),

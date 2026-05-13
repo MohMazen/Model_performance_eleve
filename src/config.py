@@ -17,6 +17,9 @@ N_ELEVES_TEST = 100
 # Paramètres du modèle
 TARGET_REG = 'note_moyenne'
 TARGET_CLF = 'reussite'  # Note >= 10
+# Seuil de réussite : 10/20, conforme au barème officiel de l'Éducation Nationale
+# française (note minimale pour valider une matière). À adapter si l'établissement
+# applique un autre barème ou un référentiel compétences.
 SEUIL_REUSSITE = 10
 
 # Colonnes d'identité (à exclure de la modélisation)

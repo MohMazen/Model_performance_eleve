@@ -19,7 +19,15 @@ st.sidebar.title("🎓 EduStats")
 st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("🎯 Profils d'Élèves")
-st.markdown("Segmentation automatique des élèves en archétypes comportementaux.")
+st.markdown("Segmentation comportementale par clustering non-supervisé.")
+st.info(
+    "**Usage pédagogique** : les groupes ci-dessous sont des regroupements "
+    "statistiques basés sur des tendances comportementales agrégées. Ils décrivent "
+    "des patterns collectifs observés dans les données, **non des catégories "
+    "figées ni des jugements individuels**. Ces profils sont destinés aux "
+    "équipes pédagogiques pour orienter un accompagnement collectif, pas à être "
+    "communiqués directement aux élèves ou aux familles."
+)
 
 df_feat = _get("df_feat")
 if df_feat is None:
@@ -145,6 +153,11 @@ if profiler and profiler.feature_names:
 # Attribution par élève
 st.markdown("---")
 st.subheader("👤 Attribution individuelle")
+st.caption(
+    "⚠️ Ce tableau associe chaque élève au groupe le plus proche dans l'espace "
+    "des features. Cette association est probabiliste et provisoire — elle ne "
+    "définit pas l'élève."
+)
 
 df_attrib = df_feat.copy()
 df_attrib["Profil"] = [names.get(l, f"Profil {l}") for l in labels]

@@ -30,11 +30,34 @@ if model_clf is None or df_feat is None or feature_columns is None:
     st.stop()
 
 # Paramètres
+st.info(
+    "**Calibration des seuils** : les valeurs par défaut ci-dessous sont des "
+    "points de départ. Pour les adapter à votre établissement, comparez les "
+    "alertes générées avec les résultats réels de l'année passée (taux de "
+    "redoublement, conseils de classe) et ajustez les seuils pour minimiser "
+    "les faux positifs tout en couvrant les situations à risque avéré."
+)
 col_p1, col_p2, col_p3 = st.columns(3)
 with col_p1:
-    seuil_alerte = st.slider("Seuil d'alerte (score de risque)", 20, 80, 50, 5)
+    seuil_alerte = st.slider(
+        "Seuil d'alerte (score de risque)", 20, 80, 50, 5,
+        help=(
+            "Score composite [0–100] au-dessus duquel un élève est signalé. "
+            "Zones : 0–25 Serein · 25–50 Vigilance · 50–75 Alerte · 75–100 Critique. "
+            "Abaissez pour être plus sensible (plus d'alertes), relevez pour "
+            "être plus sélectif. À calibrer sur les données historiques locales."
+        )
+    )
 with col_p2:
-    ml_weight = st.slider("Poids ML (%)", 30, 80, 60, 5) / 100
+    ml_weight = st.slider(
+        "Poids ML (%)", 30, 80, 60, 5,
+        help=(
+            "Part du score ML dans le score composite. "
+            "Défaut 60 % : le modèle ML capture les interactions complexes ; "
+            "les 40 % restants viennent des règles métier éducatives. "
+            "Augmentez si le modèle est bien validé sur vos données réelles."
+        )
+    ) / 100
 with col_p3:
     rules_weight = 1.0 - ml_weight
     st.metric("Poids Règles Métier", f"{rules_weight*100:.0f}%")
