@@ -37,9 +37,16 @@ def main():
     if os.path.exists(DATA_FILE):
         df = charger_donnees(DATA_FILE)
         # Vérifier la compatibilité du schéma (les colonnes attendues existent-elles ?)
+        # Liste de colonnes-clés du schéma Questionnaire.html. Toute absence
+        # provoque une régénération du CSV synthétique pour rester aligné.
         required_cols = ['activite_sportive', 'heures_etude_soir', 'heures_jeux_video',
-                         'heures_sommeil', 'stress_personnel', 'perseverance', 'heures_reseaux_sociaux',
-                         'heures_streaming', 'specialite1ere_1_nom', 'note_specialite1ere_1']
+                         'heures_sommeil', 'stress_personnel', 'stress1', 'stress2',
+                         'perseverance', 'grit1', 'grit2', 'grit3',
+                         'motivation_maths', 'motivation_francais',
+                         'motivation_enseignement_scientifique',
+                         'heures_reseaux_sociaux', 'heures_streaming',
+                         'specialite1ere_1_nom', 'specialite1ere_1_motivation',
+                         'note_specialite1ere_1']
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
             logger.warning(f"Schéma CSV incompatible (colonnes manquantes : {missing}). Régénération...")
