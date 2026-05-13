@@ -13,18 +13,21 @@ from sklearn.decomposition import PCA
 
 logger = logging.getLogger(__name__)
 
-# Noms d'archétypes par caractéristiques dominantes
+# Noms de groupes comportementaux — descriptifs et neutres.
+# Ces étiquettes décrivent des tendances statistiques agrégées, pas des
+# caractéristiques individuelles permanentes. Elles ne doivent pas être
+# communiquées directement aux élèves ou aux familles.
 ARCHETYPE_RULES = [
     {"condition": lambda p: p.get("heures_etude_soir", 0) > 0.5 and p.get("stress_total", 0) > 0.5,
-     "name": "📖 Le Studieux Stressé"},
+     "name": "📖 Groupe Étude Soutenue"},
     {"condition": lambda p: p.get("score_equilibre", 0) > 0.5 and p.get("indice_motivation", 0) > 0.5,
-     "name": "⚖️ L'Équilibré Performant"},
+     "name": "⚖️ Groupe Équilibre Élevé"},
     {"condition": lambda p: p.get("temps_ecrans_total", 0) > 0.5 and p.get("heures_etude_soir", 0) < -0.3,
-     "name": "📱 Le Décrocheur Digital"},
+     "name": "📱 Groupe Temps d'Écran Élevé"},
     {"condition": lambda p: p.get("perseverance", 0) > 0.3 and p.get("confiance_soi", 0) > 0.3,
-     "name": "💪 Le Résilient Confiant"},
+     "name": "💪 Groupe Persévérance & Confiance"},
     {"condition": lambda p: p.get("heures_sommeil", 0) < -0.3 and p.get("stress_total", 0) > 0.3,
-     "name": "😴 Le Fatigué Sous Pression"},
+     "name": "😴 Groupe Sommeil Court"},
 ]
 
 

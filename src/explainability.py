@@ -145,8 +145,8 @@ def generate_shap_failure_analysis(model_pipeline: Any, X_sample: pd.DataFrame,
             show=False
         )
 
-        plt.title("Facteurs contribuant à l'échec scolaire (Analyse IA)", fontsize=14, pad=20)
-        plt.xlabel("Impact moyen sur le risque d'échec", fontsize=12)
+        plt.title("Facteurs corrélés à l'échec scolaire — corrélation ≠ causalité", fontsize=13, pad=20)
+        plt.xlabel("Corrélation SHAP moyenne avec le risque d'échec", fontsize=11)
         plt.ylabel("Facteurs analysés", fontsize=12)
         plt.tight_layout()
 
@@ -238,8 +238,8 @@ def generate_shap_analysis(model_pipeline: Any, X_sample: pd.DataFrame, buf: Opt
             show=False
         )
 
-        plt.title("Importance des facteurs de réussite (Analyse IA)", fontsize=14, pad=20)
-        plt.xlabel("Impact moyen sur la note de l'élève", fontsize=12)
+        plt.title("Corrélation des facteurs avec la réussite — corrélation ≠ causalité", fontsize=13, pad=20)
+        plt.xlabel("Corrélation SHAP moyenne avec la note de l'élève", fontsize=11)
         plt.ylabel("Facteurs analysés", fontsize=12)
         plt.tight_layout()
 

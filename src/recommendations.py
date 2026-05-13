@@ -39,6 +39,17 @@ ACTIONABLE_FACTORS: Dict[str, Dict[str, Any]] = {
 
 NON_ACTIONABLE = {"age", "classe", "etablissement", "duree_trajet_ar_min", "nom", "prenom", "adresse", "nb_repas"}
 
+# Disclaimer obligatoire : les valeurs SHAP mesurent des corrélations dans les
+# données d'entraînement, pas des relations causales vérifiées. Modifier un
+# facteur ne garantit pas le changement de résultat prédit.
+CORRELATION_DISCLAIMER = (
+    "⚠️ **Avertissement méthodologique** : les recommandations ci-dessous sont "
+    "fondées sur des corrélations statistiques (valeurs SHAP), non sur des "
+    "relations causales établies. Agir sur un facteur n'entraîne pas "
+    "mécaniquement une amélioration des résultats scolaires. Ces pistes doivent "
+    "être interprétées par un professionnel de l'éducation avant toute action."
+)
+
 
 class RecommendationEngine:
     """Moteur de recommandations personnalisées basé sur SHAP."""
@@ -106,13 +117,17 @@ class RecommendationEngine:
             lines.append(f"**Note actuelle** : {note_actuelle:.2f}/20")
         if note_predite is not None:
             lines.append(f"**Note prédite** : {note_predite:.2f}/20")
-        lines += ["", "---", "", "## Recommandations"]
+        lines += ["", "---", "",
+                  "> ⚠️ Ces recommandations sont fondées sur des corrélations statistiques "
+                  "(valeurs SHAP), non sur des relations causales. Elles doivent être "
+                  "interprétées par un professionnel de l'éducation avant toute action.",
+                  "", "## Recommandations"]
         for i, rec in enumerate(recommendations, 1):
             lines.append(f"### {i}. {rec.get('icon', '📌')} {rec['label']}")
             lines.append(f"**Action** : {rec['recommendation']}")
             if rec.get("current_value") is not None and rec.get("suggested_value") is not None:
                 lines.append(f"- Actuel : `{rec['current_value']}{rec.get('unit', '')}` → Objectif : `{rec['suggested_value']}{rec.get('unit', '')}`")
-            lines.append(f"- Impact SHAP : `{rec.get('shap_impact', 0):+.3f}`")
+            lines.append(f"- Corrélation SHAP : `{rec.get('shap_impact', 0):+.3f}` *(corrélation, pas causalité)*")
             lines.append("")
         lines.append("---\n*EduStats v3.0*")
         return "\n".join(lines)
