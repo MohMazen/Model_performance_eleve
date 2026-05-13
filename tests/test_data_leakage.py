@@ -104,24 +104,68 @@ class TestPipelineDoesNotSeeTarget:
 
 
 class TestImputationAfterSplit:
-    """Sanity-check : nettoyer_donnees ne doit pas dépendre du test set quand
-    on l'applique séparément. La signature actuelle de nettoyer_donnees prend
-    un seul DataFrame ; ce test fige le comportement attendu pour qu'une
-    régression soit détectée si la fonction commençait à utiliser une variable
-    globale ou un cache partagé entre appels successifs."""
+    """Vérifie que l'imputation statistique est déléguée au pipeline sklearn
+    (post-split) et non appliquée globalement avant le split dans nettoyer_donnees."""
 
-    def test_nettoyage_independent_des_appels(self):
-        df1 = generer_donnees_synthetiques(n_eleves=40)
-        df2 = generer_donnees_synthetiques(n_eleves=60)
-        # Introduire des NaN différents dans chaque jeu.
-        df1.loc[0:3, 'heures_etude_soir'] = np.nan
-        df2.loc[0:5, 'heures_etude_soir'] = np.nan
-
-        clean1_solo = nettoyer_donnees(df1.copy())
-        clean1_after_df2 = nettoyer_donnees(df1.copy())  # même entrée, après df2 vu
-
-        # Le nettoyage de df1 ne doit pas dépendre d'un état laissé par df2.
-        pd.testing.assert_frame_equal(
-            clean1_solo.reset_index(drop=True),
-            clean1_after_df2.reset_index(drop=True),
+    def test_nettoyer_donnees_preserve_les_nan(self):
+        """nettoyer_donnees ne doit plus imputer les valeurs manquantes numériques."""
+        df = generer_donnees_synthetiques(n_eleves=40)
+        df.loc[0, 'heures_etude_soir'] = np.nan
+        cleaned = nettoyer_donnees(df.copy())
+        assert cleaned['heures_etude_soir'].isna().any(), (
+            "nettoyer_donnees ne doit pas imputer les NaN numériques — "
+            "l'imputation est déléguée au pipeline sklearn (post-split)."
         )
+
+    def test_pipeline_contient_imputer_numerique(self, df_prepared):
+        """La branche numérique du pipeline doit contenir un SimpleImputer."""
+        from sklearn.impute import SimpleImputer
+        X = _build_X(df_prepared)
+        mm = ModelManager()
+        mm.prepare_pipeline(X)
+        # Accès aux transformers non fittés via .transformers (liste de tuples).
+        tr_dict = {name: tr for name, tr, _ in mm.preprocessor.transformers}
+        num_pipe = tr_dict['num']
+        assert 'imputer' in num_pipe.named_steps, (
+            "prepare_pipeline doit inclure un SimpleImputer dans la branche numérique."
+        )
+        assert isinstance(num_pipe.named_steps['imputer'], SimpleImputer)
+        assert num_pipe.named_steps['imputer'].strategy == 'median'
+
+    def test_pipeline_contient_imputer_categoriel(self, df_prepared):
+        """La branche catégorielle du pipeline doit contenir un SimpleImputer."""
+        from sklearn.impute import SimpleImputer
+        X = _build_X(df_prepared)
+        mm = ModelManager()
+        mm.prepare_pipeline(X)
+        tr_dict = {name: tr for name, tr, _ in mm.preprocessor.transformers}
+        cat_pipe = tr_dict['cat']
+        assert 'imputer' in cat_pipe.named_steps, (
+            "prepare_pipeline doit inclure un SimpleImputer dans la branche catégorielle."
+        )
+        assert isinstance(cat_pipe.named_steps['imputer'], SimpleImputer)
+        assert cat_pipe.named_steps['imputer'].strategy == 'most_frequent'
+
+    def test_pipeline_gere_nan_du_test_set(self, df_prepared):
+        """Un NaN introduit dans le test set doit être géré par l'imputer
+        du pipeline entraîné sur le train set (sans erreur et sans voir le test)."""
+        from sklearn.model_selection import train_test_split
+        from xgboost import XGBRegressor
+        X = _build_X(df_prepared)
+        y = df_prepared[TARGET_REG]
+        X_train, X_test, y_train, _ = train_test_split(
+            X, y, test_size=0.3, random_state=0
+        )
+        feat = X_train.select_dtypes(include=[np.number]).columns[0]
+        X_test_nan = X_test.copy()
+        X_test_nan.iloc[0, X_test_nan.columns.get_loc(feat)] = np.nan
+
+        mm = ModelManager()
+        mm.prepare_pipeline(X_train)
+        pipeline = mm._build_pipeline('regression', XGBRegressor(random_state=42, n_estimators=10))
+        pipeline.fit(X_train, y_train)
+
+        # La prédiction ne doit pas lever d'exception et doit renvoyer un tableau valide.
+        preds = pipeline.predict(X_test_nan)
+        assert len(preds) == len(X_test_nan)
+        assert not np.isnan(preds).any(), "Les prédictions ne doivent pas contenir de NaN."

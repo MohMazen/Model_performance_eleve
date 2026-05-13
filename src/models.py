@@ -13,6 +13,7 @@ from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.svm import SVR, SVC
 from xgboost import XGBRegressor
 from src.config import MODEL_FILE
@@ -113,8 +114,17 @@ class ModelManager:
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
 
-        num_transformer = Pipeline(steps=[('scaler', StandardScaler())])
-        cat_transformer = Pipeline(steps=[('onehot', OneHotEncoder(handle_unknown='ignore'))])
+        # L'imputation doit être DANS le pipeline pour être apprise sur le seul
+        # train set et appliquée ensuite au test set avec les mêmes statistiques.
+        # Ne jamais imputer avant train_test_split (fuite de données).
+        num_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler()),
+        ])
+        cat_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='most_frequent')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore')),
+        ])
 
         self.preprocessor = ColumnTransformer(
             transformers=[
