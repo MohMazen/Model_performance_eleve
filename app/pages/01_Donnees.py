@@ -107,7 +107,7 @@ with tab3:
         except Exception:
             pass
 
-    with st.form("questionnaire_form", border=True):
+    with st.form("questionnaire_form"):
 
         # ── Section 1 : État civil ────────────────────────────────────────
         st.markdown("#### 1. État civil")
