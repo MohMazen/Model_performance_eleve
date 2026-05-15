@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.config import COLS_TO_DROP, TARGET_CLF, TARGET_REG
-from src.fairness import audit_fairness, format_fairness_report
+from src.fairness import (
+    audit_fairness, format_fairness_report,
+    compare_privacy_performance, get_privacy_preserving_features, SENSITIVE_COLS,
+)
 from app.utils_st import _get
 
 st.sidebar.title("🎓 EduStats")
@@ -136,3 +139,80 @@ if st.button("Lancer l'audit", type="primary"):
 
     with st.expander("Rapport texte complet"):
         st.code(format_fairness_report(audit), language='text')
+
+# ── Mode Privacy-First ──────────────────────────────────────────────────────
+st.markdown("---")
+st.subheader("🔒 Mode Privacy-First")
+st.markdown(
+    "Inspiré du **Case 3** de Muresan et al. (2026) : un modèle entraîné *sans* "
+    "données démographiques sensibles (genre, âge, situation de handicap…) perd "
+    "typiquement **< 1.9 % de F1** par rapport à un modèle intégrant toutes les features.\n\n"
+    "Ce test compare les performances via une validation croisée 5-fold avec "
+    "régression logistique standardisée."
+)
+
+cols_sens_present = [c for c in SENSITIVE_COLS if c in df_feat.columns]
+if not cols_sens_present:
+    st.info(
+        "Aucune colonne sensible détectée dans les données actuelles "
+        f"(colonnes surveillées : {', '.join(SENSITIVE_COLS[:6])}…). "
+        "Si des données réelles contenant ces colonnes sont chargées, "
+        "le test s'activera automatiquement."
+    )
+else:
+    st.markdown(f"**Colonnes sensibles détectées** : `{', '.join(cols_sens_present)}`")
+
+    if st.button("🔍 Lancer la comparaison privacy-first", key="btn_privacy"):
+        with st.spinner("Validation croisée en cours…"):
+            cols_drop = [c for c in COLS_TO_DROP if c in df_feat.columns]
+            targets = [c for c in (TARGET_REG, TARGET_CLF) if c in df_feat.columns]
+            X_full = df_feat.drop(columns=cols_drop + targets, errors='ignore')
+            y_clf = df_feat[TARGET_CLF] if TARGET_CLF in df_feat.columns else None
+
+        if y_clf is None or len(y_clf.unique()) < 2:
+            st.warning("Cible de classification manquante ou constante — test impossible.")
+        else:
+            try:
+                result = compare_privacy_performance(X_full, y_clf, cv=5)
+
+                colA, colB, colC = st.columns(3)
+                colA.metric("F1 (toutes features)", f"{result['f1_full']:.3f}")
+                colB.metric(
+                    "F1 (sans données sensibles)",
+                    f"{result['f1_privacy']:.3f}",
+                    delta=f"{result['delta_f1']:+.3f}",
+                )
+                colC.metric(
+                    "Variation relative",
+                    f"{result['delta_pct']:+.1f} %",
+                    delta_color="inverse",
+                )
+
+                if result['privacy_cost_acceptable']:
+                    st.success(
+                        f"✅ Variation de F1 acceptable ({result['delta_pct']:+.1f} % < 5 %). "
+                        "Le mode privacy-first est recommandé pour ce jeu de données."
+                    )
+                else:
+                    st.warning(
+                        f"⚠️ Perte de F1 significative ({result['delta_pct']:+.1f} %). "
+                        "L'utilisation des colonnes sensibles est justifiée par la performance."
+                    )
+
+                removed_str = (
+                    ', '.join(f'`{c}`' for c in result['cols_removed'])
+                    if result['cols_removed'] else '_aucune_'
+                )
+                st.caption(f"Colonnes retirées : {removed_str} — {result['reference']}")
+
+                with st.expander("Détails complets"):
+                    st.json({
+                        "f1_full": result['f1_full'],
+                        "f1_privacy": result['f1_privacy'],
+                        "accuracy_full": result['accuracy_full'],
+                        "accuracy_privacy": result['accuracy_privacy'],
+                        "colonnes_supprimees": result['cols_removed'],
+                        "reference": result['reference'],
+                    })
+            except Exception as e:
+                st.error(f"Erreur lors de la comparaison : {e}")

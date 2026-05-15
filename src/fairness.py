@@ -20,12 +20,21 @@ réentraînement et les écarts entre groupes doivent être documentés.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+# Colonnes démographiques sensibles au sens RGPD — inspiré de l'étude d'ablation
+# Case 3 vs Case 5 de Muresan et al. (2026) : supprimer ces colonnes entraîne
+# une perte de F1 < 1.9 % tout en améliorant la confidentialité des données élèves.
+SENSITIVE_COLS: List[str] = [
+    'genre', 'sexe', 'age', 'date_naissance', 'nationalite',
+    'handicap', 'situation_handicap', 'imd_band', 'region',
+    'boursier', 'csp', 'categorie_socioprofessionnelle', 'revenus_foyer',
+]
 
 
 def _safe_div(num: float, denom: float) -> float:
@@ -201,3 +210,118 @@ def format_fairness_report(audit: Dict[str, Any]) -> str:
         lines.append(r['per_group'].to_string())
 
     return "\n".join(lines)
+
+
+def get_privacy_preserving_features(
+    df: pd.DataFrame,
+    extra_sensitive: Optional[List[str]] = None,
+    verbose: bool = False,
+) -> Tuple[pd.DataFrame, List[str]]:
+    """
+    Supprime les colonnes démographiques sensibles du DataFrame.
+
+    Inspiré du Case 3 de Muresan et al. (2026) : entraîner sans les données
+    démographiques (âge, genre, handicap…) entraîne une perte de F1 < 1.9 %
+    tout en améliorant la protection des données personnelles des élèves.
+
+    Parameters
+    ----------
+    df : DataFrame d'entrée (features + éventuellement colonnes sensibles).
+    extra_sensitive : Colonnes supplémentaires à traiter comme sensibles.
+    verbose : Si True, journalise les colonnes supprimées.
+
+    Returns
+    -------
+    (df_filtré, colonnes_supprimées)
+    """
+    to_remove = list(SENSITIVE_COLS) + (extra_sensitive or [])
+    cols_dropped = [c for c in to_remove if c in df.columns]
+    df_out = df.drop(columns=cols_dropped, errors='ignore')
+    if verbose:
+        logger.info(
+            "Mode privacy-first : %d colonne(s) sensible(s) supprimée(s) : %s",
+            len(cols_dropped), cols_dropped,
+        )
+    return df_out, cols_dropped
+
+
+def compare_privacy_performance(
+    X: pd.DataFrame,
+    y: pd.Series,
+    model=None,
+    cv: int = 5,
+    extra_sensitive: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Compare les performances d'un modèle avec et sans les colonnes sensibles.
+
+    Utilise une régression logistique standardisée par défaut si aucun modèle
+    n'est fourni. La validation croisée stratifiée garantit une évaluation robuste
+    même sur des datasets déséquilibrés.
+
+    Inspiré de l'étude d'ablation Case 3 vs Case 5 de Muresan et al. (2026) :
+    la suppression de l'âge, du genre et du statut de handicap entraîne
+    typiquement une perte de F1 inférieure à 1.9 %.
+
+    Parameters
+    ----------
+    X              : DataFrame d'entraînement (colonnes sensibles incluses si présentes).
+    y              : Cible binaire (réussite).
+    model          : Pipeline sklearn compatible clone(). Si None, utilise
+                     LogisticRegression(C=1, max_iter=500) avec imputation et scaling.
+    cv             : Nombre de folds de validation croisée (défaut : 5).
+    extra_sensitive: Colonnes sensibles supplémentaires à retirer.
+
+    Returns
+    -------
+    Dict avec : f1_full, f1_privacy, delta_f1, delta_pct, accuracy_full,
+    accuracy_privacy, cols_removed, n_cols_removed, privacy_cost_acceptable,
+    reference.
+    """
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.model_selection import cross_validate, StratifiedKFold
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.impute import SimpleImputer
+
+    X_priv, cols_removed = get_privacy_preserving_features(
+        X, extra_sensitive=extra_sensitive, verbose=True
+    )
+
+    if model is None:
+        clf = make_pipeline(
+            SimpleImputer(strategy='median'),
+            StandardScaler(),
+            LogisticRegression(C=1.0, max_iter=500, random_state=42),
+        )
+    else:
+        clf = model
+
+    # Calcule le nombre de folds adaptable aux données.
+    min_class_count = int(y.value_counts().min())
+    n_splits = max(2, min(cv, min_class_count, len(y) // 5))
+    cv_obj = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    scores_full = cross_validate(clf, X, y, cv=cv_obj, scoring=['f1', 'accuracy'])
+    scores_priv = cross_validate(clf, X_priv, y, cv=cv_obj, scoring=['f1', 'accuracy'])
+
+    f1_full = float(scores_full['test_f1'].mean())
+    f1_priv = float(scores_priv['test_f1'].mean())
+    acc_full = float(scores_full['test_accuracy'].mean())
+    acc_priv = float(scores_priv['test_accuracy'].mean())
+
+    delta_f1 = f1_priv - f1_full
+    delta_pct = (delta_f1 / f1_full * 100) if f1_full > 0 else 0.0
+
+    return {
+        'f1_full': round(f1_full, 4),
+        'f1_privacy': round(f1_priv, 4),
+        'delta_f1': round(delta_f1, 4),
+        'delta_pct': round(delta_pct, 2),
+        'accuracy_full': round(acc_full, 4),
+        'accuracy_privacy': round(acc_priv, 4),
+        'cols_removed': cols_removed,
+        'n_cols_removed': len(cols_removed),
+        'privacy_cost_acceptable': abs(delta_pct) < 5.0,
+        'reference': 'Muresan et al. (2026) — Case 3 vs Case 5 : Δ F1 < 1.9 %',
+    }

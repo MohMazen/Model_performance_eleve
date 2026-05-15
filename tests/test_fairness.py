@@ -20,6 +20,9 @@ from src.fairness import (
     demographic_parity_difference,
     equalized_odds_difference,
     format_fairness_report,
+    get_privacy_preserving_features,
+    compare_privacy_performance,
+    SENSITIVE_COLS,
 )
 
 
@@ -157,3 +160,84 @@ class TestFormatReport:
         assert 'genre' in report
         assert 'CRITIQUE' in report
         assert 'Demographic parity' in report
+
+
+class TestGetPrivacyPreservingFeatures:
+    def test_drops_known_sensitive_columns(self):
+        df = pd.DataFrame({'genre': ['M', 'F'], 'score': [10, 12], 'age': [17, 18]})
+        df_out, dropped = get_privacy_preserving_features(df)
+        assert 'genre' not in df_out.columns
+        assert 'age' not in df_out.columns
+        assert 'score' in df_out.columns
+        assert 'genre' in dropped
+        assert 'age' in dropped
+
+    def test_returns_unchanged_when_no_sensitive_cols(self):
+        df = pd.DataFrame({'score': [10, 12], 'heures': [5, 6]})
+        df_out, dropped = get_privacy_preserving_features(df)
+        assert list(df_out.columns) == ['score', 'heures']
+        assert dropped == []
+
+    def test_extra_sensitive_cols_are_dropped(self):
+        df = pd.DataFrame({'score': [1, 2], 'classe': ['A', 'B']})
+        df_out, dropped = get_privacy_preserving_features(df, extra_sensitive=['classe'])
+        assert 'classe' not in df_out.columns
+        assert 'classe' in dropped
+
+    def test_original_df_not_modified(self):
+        df = pd.DataFrame({'genre': ['M', 'F'], 'score': [10, 12]})
+        cols_before = list(df.columns)
+        get_privacy_preserving_features(df)
+        assert list(df.columns) == cols_before
+
+    def test_sensitive_cols_is_list_of_strings(self):
+        assert isinstance(SENSITIVE_COLS, list)
+        assert all(isinstance(c, str) for c in SENSITIVE_COLS)
+
+
+class TestComparePrivacyPerformance:
+    @pytest.fixture
+    def simple_data(self):
+        rng = np.random.default_rng(42)
+        n = 120
+        score = rng.uniform(0, 20, n)
+        X = pd.DataFrame({
+            'score': score,
+            'assiduite': rng.uniform(0, 100, n),
+            'genre': rng.integers(0, 2, n),
+        })
+        y = pd.Series((score > 10).astype(int))
+        return X, y
+
+    def test_returns_expected_keys(self, simple_data):
+        X, y = simple_data
+        result = compare_privacy_performance(X, y, cv=2)
+        expected = [
+            'f1_full', 'f1_privacy', 'delta_f1', 'delta_pct',
+            'accuracy_full', 'accuracy_privacy', 'cols_removed',
+            'n_cols_removed', 'privacy_cost_acceptable', 'reference',
+        ]
+        for key in expected:
+            assert key in result, f"Clé manquante : {key}"
+
+    def test_privacy_cost_acceptable_is_bool(self, simple_data):
+        X, y = simple_data
+        result = compare_privacy_performance(X, y, cv=2)
+        assert isinstance(result['privacy_cost_acceptable'], bool)
+
+    def test_genre_column_removed(self, simple_data):
+        X, y = simple_data
+        result = compare_privacy_performance(X, y, cv=2)
+        assert 'genre' in result['cols_removed']
+
+    def test_f1_values_in_valid_range(self, simple_data):
+        X, y = simple_data
+        result = compare_privacy_performance(X, y, cv=2)
+        assert 0.0 <= result['f1_full'] <= 1.0
+        assert 0.0 <= result['f1_privacy'] <= 1.0
+
+    def test_delta_consistent(self, simple_data):
+        X, y = simple_data
+        result = compare_privacy_performance(X, y, cv=2)
+        expected_delta = round(result['f1_privacy'] - result['f1_full'], 4)
+        assert abs(result['delta_f1'] - expected_delta) < 1e-3

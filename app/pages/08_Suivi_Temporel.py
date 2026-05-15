@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.temporal import TemporalAnalyzer, generer_donnees_multi_periodes
-from src.config import TARGET_REG
+from src.config import TARGET_REG, TARGET_CLF
 from app.utils_st import _get, _set
 
 st.sidebar.title("🎓 EduStats")
@@ -165,3 +165,111 @@ if trends is not None:
             )
             fig_traj.add_hline(y=10, line_dash="dash", line_color="red", annotation_text="Seuil réussite")
             st.plotly_chart(fig_traj, use_container_width=True)
+
+# ── Courbe de prédictibilité progressive ────────────────────────────────────
+st.markdown("---")
+st.subheader("📊 Courbe de prédictibilité progressive")
+st.markdown(
+    "Inspiré de Muresan et al. (2026) : comment la précision du modèle évolue-t-elle "
+    "selon la quantité de données disponibles ? Chaque point correspond à un modèle "
+    "entraîné sur les données agrégées des *k* premières périodes."
+)
+
+periods_available = sorted(df_multi["periode_order"].unique())
+
+if len(periods_available) < 2:
+    st.info("Au moins 2 périodes sont nécessaires pour tracer la courbe de prédictibilité.")
+elif TARGET_CLF not in df_multi.columns:
+    st.info(f"Colonne cible '{TARGET_CLF}' absente des données — courbe non disponible.")
+else:
+    if st.button("📈 Calculer la courbe de prédictibilité", key="btn_pred_curve"):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import cross_validate, StratifiedKFold
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.impute import SimpleImputer
+
+        num_cols = df_multi.select_dtypes(include="number").columns.tolist()
+        feature_cols = [
+            c for c in num_cols
+            if c not in ("periode_order", target_reg, TARGET_CLF)
+        ]
+
+        clf_pipe = make_pipeline(
+            SimpleImputer(strategy="median"),
+            StandardScaler(),
+            LogisticRegression(C=1.0, max_iter=500, random_state=42),
+        )
+
+        curve_rows = []
+        n_total = len(periods_available)
+
+        with st.spinner(f"Calcul sur {n_total} période(s)…"):
+            for k in range(1, n_total + 1):
+                sub = df_multi[df_multi["periode_order"] < k]
+                agg_feats = sub.groupby(id_col)[feature_cols].mean()
+                y_per_student = sub.groupby(id_col)[TARGET_CLF].last()
+
+                common = agg_feats.index.intersection(y_per_student.index)
+                X_k = agg_feats.loc[common]
+                y_k = y_per_student.loc[common]
+
+                n_classes = len(y_k.unique())
+                min_class = int(y_k.value_counts().min()) if n_classes >= 2 else 0
+
+                if len(X_k) >= 10 and n_classes >= 2 and min_class >= 2:
+                    n_splits = max(2, min(5, min_class))
+                    cv_obj = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+                    try:
+                        scores = cross_validate(
+                            clf_pipe, X_k, y_k, cv=cv_obj,
+                            scoring=["f1", "accuracy"],
+                        )
+                        curve_rows.append({
+                            "periode": f"P{k}",
+                            "pct_disponible": round(k / n_total * 100, 1),
+                            "f1": round(float(scores["test_f1"].mean()), 3),
+                            "accuracy": round(float(scores["test_accuracy"].mean()), 3),
+                            "n_eleves": len(X_k),
+                        })
+                    except Exception as exc:
+                        logger.warning("Erreur période %d : %s", k, exc)
+
+        if curve_rows:
+            df_curve = pd.DataFrame(curve_rows)
+            _set("predictability_curve", df_curve)
+
+            df_melted = df_curve.melt(
+                id_vars=["periode", "pct_disponible", "n_eleves"],
+                value_vars=["f1", "accuracy"],
+                var_name="Métrique", value_name="Score",
+            )
+            fig_curve = px.line(
+                df_melted, x="pct_disponible", y="Score", color="Métrique",
+                markers=True,
+                title="Prédictibilité progressive selon les périodes disponibles",
+                labels={
+                    "pct_disponible": "% données disponibles",
+                    "Score": "Score (CV stratifié)",
+                },
+                color_discrete_map={"f1": "#2196f3", "accuracy": "#4caf50"},
+            )
+            fig_curve.update_xaxes(ticksuffix="%", range=[0, 105])
+            fig_curve.update_yaxes(range=[0, 1.05])
+            fig_curve.add_hline(
+                y=0.7, line_dash="dot", line_color="orange",
+                annotation_text="Seuil acceptable (0.70)",
+            )
+            st.plotly_chart(fig_curve, use_container_width=True)
+            st.dataframe(df_curve, use_container_width=True)
+
+            if len(df_curve) >= 2:
+                f1_first = df_curve["f1"].iloc[0]
+                f1_last = df_curve["f1"].iloc[-1]
+                gain = f1_last - f1_first
+                st.info(
+                    f"📈 Gain de F1 : **{f1_first:.3f}** (période 1) → "
+                    f"**{f1_last:.3f}** (toutes périodes) — gain total : **{gain:+.3f}**."
+                )
+        else:
+            st.warning("Données insuffisantes pour calculer la courbe (< 10 élèves ou une seule classe).")
