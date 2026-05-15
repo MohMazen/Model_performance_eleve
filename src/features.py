@@ -24,6 +24,14 @@ KEYWORDS = {
     'heure_lever': ['lever', 'wakeup', 'wake_up']
 }
 
+# ── Colonnes de notes (alignées avec config.GRADE_COLUMNS) ───────────────────
+# Inspiré du concept "Partial Grade" de Muresan et al. 2026, arXiv:2601.06729
+_NOTE_TRONC = ['note_francais', 'note_maths', 'note_histoire_geo', 'note_sciences']
+_NOTE_SPECIALITE = [
+    'note_specialite1ere_1', 'note_specialite1ere_2', 'note_specialite1ere_3',
+    'note_specialiteterm_1', 'note_specialiteterm_2',
+]
+
 def get_column_mapping(df_columns: List[str]) -> Dict[str, str]:
     """
     Tente de mapper les colonnes du DataFrame aux concepts du modèle.
@@ -125,9 +133,62 @@ def nettoyer_horaires(df: pd.DataFrame, mapping: Optional[Dict[str, str]] = None
     df_h = df.copy()
     if mapping is None:
         mapping = get_column_mapping(df_h.columns)
-        
+
     for concept in ['heure_coucher', 'heure_lever']:
         col = mapping.get(concept)
         if col and col in df_h.columns:
             df_h[f"{col}_num"] = df_h[col].apply(parse_heure)
     return df_h
+
+
+def compute_note_partielle(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcule des indicateurs de performance académique à partir des notes disponibles.
+
+    Inspiré du "Partial Grade" de Muresan et al. (2026) qui montre que la note
+    cumulée progressive est le facteur prédictif le plus déterminant, surpassant
+    toutes les variables démographiques.
+
+    Features produites :
+    - note_tronc_commun   : moyenne des matières obligatoires (toujours disponible)
+    - note_specialites    : moyenne des spécialités (NaN si aucune note de spécialité)
+    - note_ecart_type     : dispersion des notes du tronc (cohérence inter-matières)
+    - note_amplitude      : étendue max-min du tronc (profil de résultats)
+    - note_couverture     : fraction de champs de notes renseignés ∈ [0, 1]
+                            (proxy du niveau d'avancement dans le parcours)
+
+    NOTE : Cette fonction est distincte de `add_advanced_features()`.
+    Elle doit être appelée explicitement pour l'analyse temporelle ou descriptive,
+    mais pas dans le pipeline de modélisation standard (les colonnes de notes
+    sont exclues de X via COLS_TO_DROP pour éviter la fuite d'information vers
+    la cible `note_moyenne`).
+    """
+    df_out = df.copy()
+
+    tronc = [c for c in _NOTE_TRONC if c in df_out.columns]
+    spe = [c for c in _NOTE_SPECIALITE if c in df_out.columns]
+    all_note_cols = tronc + spe
+
+    if tronc:
+        vals_tronc = df_out[tronc].apply(pd.to_numeric, errors='coerce')
+        df_out['note_tronc_commun'] = vals_tronc.mean(axis=1)
+        df_out['note_ecart_type'] = vals_tronc.std(axis=1).fillna(0.0)
+        df_out['note_amplitude'] = (vals_tronc.max(axis=1) - vals_tronc.min(axis=1)).fillna(0.0)
+    else:
+        df_out['note_tronc_commun'] = np.nan
+        df_out['note_ecart_type'] = np.nan
+        df_out['note_amplitude'] = np.nan
+
+    if spe:
+        vals_spe = df_out[spe].apply(pd.to_numeric, errors='coerce')
+        df_out['note_specialites'] = vals_spe.mean(axis=1)
+    else:
+        df_out['note_specialites'] = np.nan
+
+    if all_note_cols:
+        vals_all = df_out[all_note_cols].apply(pd.to_numeric, errors='coerce')
+        df_out['note_couverture'] = vals_all.notna().sum(axis=1) / len(all_note_cols)
+    else:
+        df_out['note_couverture'] = np.nan
+
+    return df_out

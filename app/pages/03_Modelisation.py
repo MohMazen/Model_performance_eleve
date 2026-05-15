@@ -39,16 +39,18 @@ if df_feat is None:
     st.stop()
 
 # Saisie du nom du modèle via une liste déroulante multi-sélection
-model_options = ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM"]
+model_options = ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM",
+                 "LDA", "Gaussian Naïve Bayes", "Bagging", "QDA"]
 selected_models = st.multiselect(
-    "Modèles à identifier (Nom du modèle)",
+    "Modèles à entraîner et évaluer",
     options=model_options,
-    default=_get("selected_models", []),
-    help="Sélectionnez les modèles qui seront mentionnés dans le rapport et les résultats."
+    default=_get("selected_models", ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM"]),
+    help="XGBoost/RF/MLP/SVM = modèles principaux. LDA/GNB/Bagging/QDA = modèles supplémentaires (Muresan et al. 2026)."
 )
 _set("selected_models", selected_models)
 model_name = ", ".join(selected_models) if selected_models else ""
 _set("model_name", model_name)
+include_extra = any(m in selected_models for m in ["LDA", "Gaussian Naïve Bayes", "Bagging", "QDA"])
 
 data_source = _get("data_source", "synthetic")
 target_reg = _get("target_reg")
@@ -99,6 +101,14 @@ if st.button("🚀 Entraîner les modèles"):
             model_nn_clf = mm.train_nn_classification(X_train, yc_train)
             model_svm_reg = mm.train_svm_regression(X_train, yr_train)
             model_svm_clf = mm.train_svm_classification(X_train, yc_train)
+
+            # Modèles supplémentaires (Muresan et al. 2026)
+            if include_extra:
+                model_lda_clf = mm.train_lda_classification(X_train, yc_train)
+                model_gnb_clf = mm.train_gnb_classification(X_train, yc_train)
+                model_bag_clf = mm.train_bag_classification(X_train, yc_train)
+                model_qda_clf = mm.train_qda_classification(X_train, yc_train)
+                model_bag_reg = mm.train_bag_regression(X_train, yr_train)
 
             yr_pred = model_reg.predict(X_test)
             yc_pred = model_clf.predict(X_test)
@@ -157,29 +167,65 @@ if st.button("🚀 Entraîner les modèles"):
             _set("metrics_svm_reg", metrics_svm_reg)
             _set("metrics_svm_clf", metrics_svm_clf)
             _set("confusion_matrix", cm)
+            if include_extra:
+                _set("metrics_extra", [
+                    ("LDA (clf)", {
+                        'accuracy': accuracy_score(yc_test, model_lda_clf.predict(X_test)) * 100,
+                        'f1': f1_score(yc_test, model_lda_clf.predict(X_test), zero_division=0),
+                    }),
+                    ("Gaussian NB (clf)", {
+                        'accuracy': accuracy_score(yc_test, model_gnb_clf.predict(X_test)) * 100,
+                        'f1': f1_score(yc_test, model_gnb_clf.predict(X_test), zero_division=0),
+                    }),
+                    ("Bagging (clf)", {
+                        'accuracy': accuracy_score(yc_test, model_bag_clf.predict(X_test)) * 100,
+                        'f1': f1_score(yc_test, model_bag_clf.predict(X_test), zero_division=0),
+                    }),
+                    ("QDA (clf)", {
+                        'accuracy': accuracy_score(yc_test, model_qda_clf.predict(X_test)) * 100,
+                        'f1': f1_score(yc_test, model_qda_clf.predict(X_test), zero_division=0),
+                    }),
+                    ("Bagging (reg)", {
+                        'r2': r2_score(yr_test, model_bag_reg.predict(X_test)),
+                        'mae': mean_absolute_error(yr_test, model_bag_reg.predict(X_test)),
+                    }),
+                ])
             _set("feature_columns", list(X_train.columns))
             mm.feature_columns = list(X_train.columns)  # BUG#5 fix : pour persistance dans joblib
 
             # Sélection du meilleur modèle global
-            # Régression
-            best_reg_config = {"score": metrics_reg['r2'], "model": model_reg, "type": "XGBoost"}
-            if metrics_nn_reg['r2'] > best_reg_config["score"]:
-                best_reg_config = {"score": metrics_nn_reg['r2'], "model": model_nn_reg, "type": "Réseau de Neurones"}
-            if metrics_svm_reg['r2'] > best_reg_config["score"]:
-                best_reg_config = {"score": metrics_svm_reg['r2'], "model": model_svm_reg, "type": "SVM"}
-            
-            mm.best_overall_reg = best_reg_config["model"]
-            _set("best_reg_type", best_reg_config["type"])
+            reg_candidates = [
+                (metrics_reg['r2'], model_reg, "XGBoost"),
+                (metrics_nn_reg['r2'], model_nn_reg, "Réseau de Neurones"),
+                (metrics_svm_reg['r2'], model_svm_reg, "SVM"),
+            ]
+            clf_candidates = [
+                (metrics_clf['accuracy'], model_clf, "Random Forest"),
+                (metrics_nn_clf['accuracy'], model_nn_clf, "Réseau de Neurones"),
+                (metrics_svm_clf['accuracy'], model_svm_clf, "SVM"),
+            ]
+            if include_extra:
+                reg_candidates.append((
+                    r2_score(yr_test, model_bag_reg.predict(X_test)), model_bag_reg, "Bagging"
+                ))
+                for extra_model, extra_label in [
+                    (model_lda_clf, "LDA"),
+                    (model_gnb_clf, "Gaussian NB"),
+                    (model_bag_clf, "Bagging"),
+                    (model_qda_clf, "QDA"),
+                ]:
+                    clf_candidates.append((
+                        accuracy_score(yc_test, extra_model.predict(X_test)) * 100,
+                        extra_model, extra_label
+                    ))
 
-            # Classification
-            best_clf_config = {"score": metrics_clf['accuracy'], "model": model_clf, "type": "Random Forest"}
-            if metrics_nn_clf['accuracy'] > best_clf_config["score"]:
-                best_clf_config = {"score": metrics_nn_clf['accuracy'], "model": model_nn_clf, "type": "Réseau de Neurones"}
-            if metrics_svm_clf['accuracy'] > best_clf_config["score"]:
-                best_clf_config = {"score": metrics_svm_clf['accuracy'], "model": model_svm_clf, "type": "SVM"}
+            best_reg_config = max(reg_candidates, key=lambda x: x[0])
+            best_clf_config = max(clf_candidates, key=lambda x: x[0])
 
-            mm.best_overall_clf = best_clf_config["model"]
-            _set("best_clf_type", best_clf_config["type"])
+            mm.best_overall_reg = best_reg_config[1]
+            _set("best_reg_type", best_reg_config[2])
+            mm.best_overall_clf = best_clf_config[1]
+            _set("best_clf_type", best_clf_config[2])
             
             # Mettre à jour les modèles actifs avec les meilleurs
             _set("model_reg", mm.best_overall_reg)
@@ -301,6 +347,20 @@ if metrics_reg is not None:
             st.markdown("**Classification (SVC)**")
             st.metric("Accuracy  ", f"{metrics_svm_clf['accuracy']:.1f}%")
             st.metric("F1-Score  ", f"{metrics_svm_clf['f1']:.3f}")
+
+    # ── Modèles supplémentaires (Muresan et al. 2026) ─────────────────────────
+    metrics_extra = _get("metrics_extra")
+    if metrics_extra:
+        st.markdown("---")
+        st.subheader("🔬 Modèles supplémentaires — Muresan et al. 2026")
+        st.caption("LDA · Gaussian Naïve Bayes · Bagging · QDA — comparaison avec les modèles principaux")
+        rows = []
+        for label, m in metrics_extra:
+            if 'r2' in m:
+                rows.append({"Modèle": label, "R²": f"{m['r2']:.3f}", "MAE": f"{m['mae']:.3f}", "Accuracy": "—", "F1": "—"})
+            else:
+                rows.append({"Modèle": label, "R²": "—", "MAE": "—", "Accuracy": f"{m['accuracy']:.1f}%", "F1": f"{m['f1']:.3f}"})
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     if cm is not None:
         st.subheader("Matrice de confusion")
