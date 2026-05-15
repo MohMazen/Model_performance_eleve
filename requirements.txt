@@ -17,31 +17,23 @@ plotly>=5.10.0
 # Dashboard Streamlit
 streamlit>=1.20.0
 
-# Traitement de fichiers Excel
-openpyxl>=3.0.9
-xlsxwriter>=3.0.0
-
 # Outils supplémentaires
 scipy>=1.9.0
 joblib>=1.1.0
 shap>=0.41.0
 
-# Pour les rapports (optionnel)
-jinja2>=3.1.0
-markdown>=3.4.0
-
-# Pour les notebooks Jupyter (optionnel)
-jupyter>=1.0.0
-ipykernel>=6.15.0
-
 # API REST
 fastapi>=0.100.0
-uvicorn>=0.22.0
+uvicorn>=0.22.0          # serveur ASGI (lancé via CLI : uvicorn src.api:app)
 pydantic>=2.0.0
-python-multipart>=0.0.6
+python-multipart>=0.0.6  # requis par FastAPI pour UploadFile
 
 # PDF Reports
 reportlab>=4.0.0
 
 # Tests
 pytest>=7.0.0
+
+# Développement (optionnel)
+jupyter>=1.0.0
+ipykernel>=6.15.0
