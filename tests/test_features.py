@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.features import parse_heure, add_advanced_features, nettoyer_horaires
+from src.features import parse_heure, add_advanced_features, nettoyer_horaires, compute_note_partielle
 from src.data_utils import generer_donnees_synthetiques, nettoyer_donnees
 
 
@@ -85,3 +85,50 @@ class TestNettoyerDonnees:
         df = generer_donnees_synthetiques(n_eleves=50)
         df_clean = nettoyer_donnees(df)
         assert df_clean.shape == df.shape
+
+
+class TestComputeNotePartielle:
+    @pytest.fixture
+    def df_with_notes(self):
+        from src.data_utils import generer_donnees_synthetiques
+        return generer_donnees_synthetiques(n_eleves=50)
+
+    def test_note_tronc_commun_creee(self, df_with_notes):
+        from src.features import compute_note_partielle
+        df_result = compute_note_partielle(df_with_notes)
+        assert 'note_tronc_commun' in df_result.columns
+
+    def test_note_ecart_type_creee(self, df_with_notes):
+        from src.features import compute_note_partielle
+        df_result = compute_note_partielle(df_with_notes)
+        assert 'note_ecart_type' in df_result.columns
+
+    def test_note_amplitude_creee(self, df_with_notes):
+        from src.features import compute_note_partielle
+        df_result = compute_note_partielle(df_with_notes)
+        assert 'note_amplitude' in df_result.columns
+
+    def test_note_couverture_entre_0_et_1(self, df_with_notes):
+        from src.features import compute_note_partielle
+        df_result = compute_note_partielle(df_with_notes)
+        couv = df_result['note_couverture'].dropna()
+        assert (couv >= 0).all() and (couv <= 1).all()
+
+    def test_note_tronc_commun_entre_0_et_20(self, df_with_notes):
+        from src.features import compute_note_partielle
+        df_result = compute_note_partielle(df_with_notes)
+        tronc = df_result['note_tronc_commun'].dropna()
+        assert (tronc >= 0).all() and (tronc <= 20).all()
+
+    def test_donnees_originales_non_modifiees(self, df_with_notes):
+        from src.features import compute_note_partielle
+        cols_avant = set(df_with_notes.columns)
+        compute_note_partielle(df_with_notes)
+        assert set(df_with_notes.columns) == cols_avant
+
+    def test_sans_notes_tronc_retourne_nan(self):
+        from src.features import compute_note_partielle
+        import pandas as pd
+        df_vide = pd.DataFrame({'col_random': [1, 2, 3]})
+        df_result = compute_note_partielle(df_vide)
+        assert df_result['note_tronc_commun'].isna().all()

@@ -15,6 +15,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.svm import SVR, SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from xgboost import XGBRegressor
 from src.config import MODEL_FILE
 
@@ -91,6 +94,47 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
             'model__kernel': ['rbf', 'linear'],
         },
     },
+    'lda_clf': {
+        'task': 'classification',
+        'attr': 'best_model_lda_clf',
+        'label': 'LDA (classification)',
+        'estimator': lambda: LinearDiscriminantAnalysis(),
+        'param_dist': {'model__solver': ['svd', 'lsqr'], 'model__tol': [1e-4, 1e-3]},
+    },
+    'gnb_clf': {
+        'task': 'classification',
+        'attr': 'best_model_gnb_clf',
+        'label': 'Gaussian Naïve Bayes (classification)',
+        'estimator': lambda: GaussianNB(),
+        'param_dist': {'model__var_smoothing': [1e-10, 1e-9, 1e-8, 1e-7]},
+    },
+    'bag_clf': {
+        'task': 'classification',
+        'attr': 'best_model_bag_clf',
+        'label': 'Bagging (classification)',
+        'estimator': lambda: BaggingClassifier(random_state=42),
+        'param_dist': {
+            'model__n_estimators': [10, 20, 50],
+            'model__max_samples': [0.7, 0.9, 1.0],
+        },
+    },
+    'qda_clf': {
+        'task': 'classification',
+        'attr': 'best_model_qda_clf',
+        'label': 'QDA (classification)',
+        'estimator': lambda: QuadraticDiscriminantAnalysis(),
+        'param_dist': {'model__reg_param': [0.0, 0.1, 0.3, 0.5]},
+    },
+    'bag_reg': {
+        'task': 'regression',
+        'attr': 'best_model_bag_reg',
+        'label': 'Bagging (régression)',
+        'estimator': lambda: BaggingRegressor(random_state=42),
+        'param_dist': {
+            'model__n_estimators': [10, 20, 50],
+            'model__max_samples': [0.7, 0.9, 1.0],
+        },
+    },
 }
 
 
@@ -103,6 +147,11 @@ class ModelManager:
         self.best_model_nn_clf = None
         self.best_model_svm_reg = None
         self.best_model_svm_clf = None
+        self.best_model_lda_clf = None
+        self.best_model_gnb_clf = None
+        self.best_model_bag_clf = None
+        self.best_model_qda_clf = None
+        self.best_model_bag_reg = None
         self.best_overall_reg = None
         self.best_overall_clf = None
         self.subject_models: Dict[str, Any] = {}
@@ -208,8 +257,23 @@ class ModelManager:
     def train_svm_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         return self._train('svm_clf', X, y)
 
+    def train_lda_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
+        return self._train('lda_clf', X, y)
+
+    def train_gnb_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
+        return self._train('gnb_clf', X, y)
+
+    def train_bag_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
+        return self._train('bag_clf', X, y)
+
+    def train_qda_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
+        return self._train('qda_clf', X, y)
+
+    def train_bag_regression(self, X: pd.DataFrame, y: pd.Series) -> Any:
+        return self._train('bag_reg', X, y)
+
     def train_all(self, X: pd.DataFrame, y_reg: pd.Series, y_clf: pd.Series,
-                  include_svm: bool = False) -> Dict[str, Any]:
+                  include_svm: bool = False, include_extra: bool = False) -> Dict[str, Any]:
         """
         Entraîne tous les modèles du catalogue et sélectionne le meilleur
         par tâche selon le score CV. Met à jour best_overall_reg/clf.
@@ -217,6 +281,8 @@ class ModelManager:
         keys = ['reg', 'clf', 'nn_reg', 'nn_clf']
         if include_svm:
             keys += ['svm_reg', 'svm_clf']
+        if include_extra:
+            keys += ['lda_clf', 'gnb_clf', 'bag_clf', 'qda_clf', 'bag_reg']
 
         for key in keys:
             y = y_reg if MODEL_CATALOG[key]['task'] == 'regression' else y_clf
@@ -237,37 +303,33 @@ class ModelManager:
         return self.cv_scores
 
     def save_models(self, path: str = MODEL_FILE) -> None:
-        """Sauvegarde les modèles et les métadonnées sur disque."""
-        joblib.dump({
-            'reg': self.best_model_reg,
-            'clf': self.best_model_clf,
-            'nn_reg': self.best_model_nn_reg,
-            'nn_clf': self.best_model_nn_clf,
-            'svm_reg': self.best_model_svm_reg,
-            'svm_clf': self.best_model_svm_clf,
+        data = {
             'best_reg': self.best_overall_reg,
             'best_clf': self.best_overall_clf,
             'subject_models': self.subject_models,
             'feature_columns': self.feature_columns,
             'cv_scores': self.cv_scores,
-        }, path)
+        }
+        for key, spec in MODEL_CATALOG.items():
+            data[spec['attr']] = getattr(self, spec['attr'], None)
+        # Aliases legacy pour compatibilité avec les joblib existants
+        data['reg'] = self.best_model_reg
+        data['clf'] = self.best_model_clf
+        joblib.dump(data, path)
         logger.info(f"Modèles sauvegardés dans {path}")
 
     def load_models(self, path: str = MODEL_FILE) -> bool:
-        """Charge les modèles depuis le disque."""
         try:
-            dict_models = joblib.load(path)
-            self.best_model_reg = dict_models['reg']
-            self.best_model_clf = dict_models['clf']
-            self.best_model_nn_reg = dict_models.get('nn_reg')
-            self.best_model_nn_clf = dict_models.get('nn_clf')
-            self.best_model_svm_reg = dict_models.get('svm_reg')
-            self.best_model_svm_clf = dict_models.get('svm_clf')
-            self.best_overall_reg = dict_models.get('best_reg')
-            self.best_overall_clf = dict_models.get('best_clf')
-            self.subject_models = dict_models.get('subject_models', {})
-            self.feature_columns = dict_models.get('feature_columns')
-            self.cv_scores = dict_models.get('cv_scores', {})
+            d = joblib.load(path)
+            for key, spec in MODEL_CATALOG.items():
+                attr = spec['attr']
+                # Essaie d'abord la clé attr (nouveau format), puis legacy key
+                setattr(self, attr, d.get(attr) or d.get(key))
+            self.best_overall_reg = d.get('best_reg')
+            self.best_overall_clf = d.get('best_clf')
+            self.subject_models = d.get('subject_models', {})
+            self.feature_columns = d.get('feature_columns')
+            self.cv_scores = d.get('cv_scores', {})
             logger.info("Modèles chargés avec succès.")
             return True
         except (FileNotFoundError, KeyError) as e:
