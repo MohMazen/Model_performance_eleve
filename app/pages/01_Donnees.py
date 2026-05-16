@@ -480,54 +480,149 @@ if df is not None:
     st.markdown("---")
     st.subheader("Visualisations des données")
 
-    cols_a_exclure = ['nom', 'prenom', 'prénom', 'prenoms', 'prénoms', 'Nom', 'Prenom', 'Adresse', 'id', 'mail']
-    all_cols = [c for c in df.columns if str(c).lower() not in [x.lower() for x in cols_a_exclure]]
+    _EXCL_LOWER = {'nom', 'prenom', 'prénom', 'prenoms', 'prénoms', 'adresse', 'id', 'mail'}
+
+    def _col_has_data(series: pd.Series) -> bool:
+        """Retourne True si la colonne contient des données significatives à visualiser."""
+        s = series.dropna()
+        if len(s) == 0:
+            return False
+        if pd.api.types.is_numeric_dtype(series):
+            # Colonnes tout à zéro (ex. notes/motivations de spécialités non renseignées)
+            return not (float(s.max()) == 0.0 and float(s.min()) == 0.0)
+        # Colonnes texte : ignorer si toutes les valeurs non-nulles sont des chaînes vides
+        non_empty = s[s.astype(str).str.strip() != '']
+        return len(non_empty) > 0
+
+    all_cols = [
+        c for c in df.columns
+        if str(c).lower() not in _EXCL_LOWER and _col_has_data(df[c])
+    ]
+
+    n_id_cols = sum(1 for c in df.columns if str(c).lower() in _EXCL_LOWER)
+    n_skipped = len(df.columns) - n_id_cols - len(all_cols)
+    if n_skipped > 0:
+        st.caption(
+            f"ℹ️ {n_skipped} colonne(s) masquée(s) car sans données significatives "
+            "(spécialités non renseignées, champs vides…)."
+        )
 
     if all_cols:
+        _OPTS_NUMERIC   = ["Histogramme", "Boîte à moustaches", "Violin"]
+        _OPTS_CAT_FEW   = ["Secteur (donut)", "Barres verticales", "Barres horizontales"]
+        _OPTS_CAT_MANY  = ["Barres (top 20)", "Barres horizontales (top 20)", "Secteur (top 10)"]
+
         palette = px.colors.qualitative.Prism
         for i in range(0, len(all_cols), 2):
-            cols = st.columns(2)
+            ui_cols = st.columns(2)
             for j, col_name in enumerate(all_cols[i:i + 2]):
                 idx = i + j
                 couleur = palette[idx % len(palette)]
-                with cols[j]:
+                with ui_cols[j]:
                     unique_vals = df[col_name].nunique()
-                    if pd.api.types.is_datetime64_any_dtype(df[col_name]) or 'date' in str(col_name).lower():
+                    is_datetime = (
+                        pd.api.types.is_datetime64_any_dtype(df[col_name])
+                        or 'date' in str(col_name).lower()
+                    )
+                    is_numeric = pd.api.types.is_numeric_dtype(df[col_name])
+
+                    # Options disponibles selon le type de colonne
+                    if is_datetime:
+                        chart_options = ["Ligne temporelle"]
+                    elif is_numeric and unique_vals > 10:
+                        chart_options = _OPTS_NUMERIC
+                    elif unique_vals <= 10:
+                        chart_options = _OPTS_CAT_FEW
+                    else:
+                        chart_options = _OPTS_CAT_MANY
+
+                    # Sélecteur de type (affiché seulement quand plusieurs choix)
+                    if len(chart_options) > 1:
+                        chart_type = st.selectbox(
+                            "Type de graphique",
+                            options=chart_options,
+                            key=f"chart_type_{col_name}",
+                            label_visibility="collapsed",
+                            help=f"Type de graphique pour « {col_name} »",
+                        )
+                    else:
+                        chart_type = chart_options[0]
+
+                    # ── Rendu ──────────────────────────────────────────────
+                    if chart_type == "Ligne temporelle":
                         vc = df[col_name].value_counts().sort_index().reset_index(name="count")
                         fig = px.line(
                             vc, x=col_name, y="count",
                             title=f"Évolution de {col_name}",
                             labels={col_name: col_name, "count": "Nombre"},
-                            color_discrete_sequence=[couleur]
+                            color_discrete_sequence=[couleur],
                         )
-                    elif pd.api.types.is_numeric_dtype(df[col_name]) and unique_vals > 10:
+
+                    elif chart_type == "Histogramme":
                         fig = px.histogram(
                             df, x=col_name,
                             color_discrete_sequence=[couleur],
                             title=f"Distribution de {col_name}",
-                            labels={col_name: col_name, "count": "Nombre"}
+                            labels={col_name: col_name, "count": "Nombre"},
                         )
                         fig.update_traces(marker_line_width=1, marker_line_color="white")
-                    elif unique_vals <= 10:
-                        vc = df[col_name].value_counts().reset_index(name="count")
+
+                    elif chart_type == "Boîte à moustaches":
+                        fig = px.box(
+                            df, y=col_name,
+                            color_discrete_sequence=[couleur],
+                            title=f"Distribution de {col_name}",
+                            labels={col_name: col_name},
+                        )
+
+                    elif chart_type == "Violin":
+                        fig = px.violin(
+                            df, y=col_name,
+                            color_discrete_sequence=[couleur],
+                            title=f"Distribution de {col_name}",
+                            labels={col_name: col_name},
+                            box=True,
+                        )
+
+                    elif "Secteur" in chart_type:
+                        top_n = 10 if "top 10" in chart_type else None
+                        vc = df[col_name].value_counts()
+                        if top_n:
+                            vc = vc.head(top_n)
+                        vc = vc.reset_index(name="count")
+                        suffix = " (top 10)" if top_n else ""
                         fig = px.pie(
                             vc, names=col_name, values="count",
-                            title=f"Répartition de {col_name}",
-                            hole=0.3
+                            title=f"Répartition de {col_name}{suffix}",
+                            hole=0.3,
                         )
-                    else:
+
+                    elif "horizontales" in chart_type:
                         vc = df[col_name].value_counts().reset_index(name="count")
-                        if col_name in ['heure_lever', 'heure_coucher']:
+                        vc = vc.sort_values(by="count", ascending=True).tail(20)
+                        fig = px.bar(
+                            vc, y=col_name, x="count",
+                            orientation="h",
+                            color="count",
+                            color_continuous_scale="Plasma",
+                            title=f"Distribution de {col_name}",
+                            labels={col_name: col_name, "count": "Nombre"},
+                        )
+
+                    else:  # Barres verticales / Barres (top 20)
+                        vc = df[col_name].value_counts().reset_index(name="count")
+                        if col_name in ('heure_lever', 'heure_coucher'):
                             vc = vc.sort_values(by=col_name)
                         else:
                             vc = vc.sort_values(by="count", ascending=False).head(20)
                         fig = px.bar(
                             vc, x=col_name, y="count",
                             color="count",
-                            color_continuous_scale='Plasma',
+                            color_continuous_scale="Plasma",
                             title=f"Distribution de {col_name}",
-                            labels={col_name: col_name, "count": "Nombre"}
+                            labels={col_name: col_name, "count": "Nombre"},
                         )
+
                     st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Générez des données synthétiques, chargez un fichier CSV, ou remplissez le questionnaire pour commencer.")
