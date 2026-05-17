@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.svm import SVR, SVC
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from xgboost import XGBRegressor
@@ -94,13 +94,6 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
             'model__kernel': ['rbf', 'linear'],
         },
     },
-    'lda_clf': {
-        'task': 'classification',
-        'attr': 'best_model_lda_clf',
-        'label': 'LDA (classification)',
-        'estimator': lambda: LinearDiscriminantAnalysis(),
-        'param_dist': {'model__solver': ['svd', 'lsqr'], 'model__tol': [1e-4, 1e-3]},
-    },
     'gnb_clf': {
         'task': 'classification',
         'attr': 'best_model_gnb_clf',
@@ -147,7 +140,6 @@ class ModelManager:
         self.best_model_nn_clf = None
         self.best_model_svm_reg = None
         self.best_model_svm_clf = None
-        self.best_model_lda_clf = None
         self.best_model_gnb_clf = None
         self.best_model_bag_clf = None
         self.best_model_qda_clf = None
@@ -257,9 +249,6 @@ class ModelManager:
     def train_svm_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         return self._train('svm_clf', X, y)
 
-    def train_lda_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
-        return self._train('lda_clf', X, y)
-
     def train_gnb_classification(self, X: pd.DataFrame, y: pd.Series) -> Any:
         return self._train('gnb_clf', X, y)
 
@@ -282,7 +271,7 @@ class ModelManager:
         if include_svm:
             keys += ['svm_reg', 'svm_clf']
         if include_extra:
-            keys += ['lda_clf', 'gnb_clf', 'bag_clf', 'qda_clf', 'bag_reg']
+            keys += ['gnb_clf', 'bag_clf', 'qda_clf', 'bag_reg']
 
         for key in keys:
             y = y_reg if MODEL_CATALOG[key]['task'] == 'regression' else y_clf

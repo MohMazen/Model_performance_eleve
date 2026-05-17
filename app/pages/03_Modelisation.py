@@ -40,17 +40,17 @@ if df_feat is None:
 
 # Saisie du nom du modèle via une liste déroulante multi-sélection
 model_options = ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM",
-                 "LDA", "Gaussian Naïve Bayes", "Bagging", "QDA"]
+                 "Gaussian Naïve Bayes", "Bagging", "QDA"]
 selected_models = st.multiselect(
     "Modèles à entraîner et évaluer",
     options=model_options,
     default=_get("selected_models", ["XGBoost", "Random Forest", "Réseau de Neurones (MLP)", "SVM"]),
-    help="XGBoost/RF/MLP/SVM = modèles principaux. LDA/GNB/Bagging/QDA = modèles supplémentaires (Muresan et al. 2026)."
+    help="XGBoost/RF/MLP/SVM = modèles principaux. GNB/Bagging/QDA = modèles supplémentaires (Muresan et al. 2026)."
 )
 _set("selected_models", selected_models)
 model_name = ", ".join(selected_models) if selected_models else ""
 _set("model_name", model_name)
-include_extra = any(m in selected_models for m in ["LDA", "Gaussian Naïve Bayes", "Bagging", "QDA"])
+include_extra = any(m in selected_models for m in ["Gaussian Naïve Bayes", "Bagging", "QDA"])
 
 data_source = _get("data_source", "synthetic")
 target_reg = _get("target_reg")
@@ -104,7 +104,6 @@ if st.button("🚀 Entraîner les modèles"):
 
             # Modèles supplémentaires (Muresan et al. 2026)
             if include_extra:
-                model_lda_clf = mm.train_lda_classification(X_train, yc_train)
                 model_gnb_clf = mm.train_gnb_classification(X_train, yc_train)
                 model_bag_clf = mm.train_bag_classification(X_train, yc_train)
                 model_qda_clf = mm.train_qda_classification(X_train, yc_train)
@@ -169,10 +168,6 @@ if st.button("🚀 Entraîner les modèles"):
             _set("confusion_matrix", cm)
             if include_extra:
                 _set("metrics_extra", [
-                    ("LDA (clf)", {
-                        'accuracy': accuracy_score(yc_test, model_lda_clf.predict(X_test)) * 100,
-                        'f1': f1_score(yc_test, model_lda_clf.predict(X_test), zero_division=0),
-                    }),
                     ("Gaussian NB (clf)", {
                         'accuracy': accuracy_score(yc_test, model_gnb_clf.predict(X_test)) * 100,
                         'f1': f1_score(yc_test, model_gnb_clf.predict(X_test), zero_division=0),
@@ -209,7 +204,6 @@ if st.button("🚀 Entraîner les modèles"):
                     r2_score(yr_test, model_bag_reg.predict(X_test)), model_bag_reg, "Bagging"
                 ))
                 for extra_model, extra_label in [
-                    (model_lda_clf, "LDA"),
                     (model_gnb_clf, "Gaussian NB"),
                     (model_bag_clf, "Bagging"),
                     (model_qda_clf, "QDA"),
@@ -353,7 +347,7 @@ if metrics_reg is not None:
     if metrics_extra:
         st.markdown("---")
         st.subheader("🔬 Modèles supplémentaires — Muresan et al. 2026")
-        st.caption("LDA · Gaussian Naïve Bayes · Bagging · QDA — comparaison avec les modèles principaux")
+        st.caption("Gaussian Naïve Bayes · Bagging · QDA — comparaison avec les modèles principaux")
         rows = []
         for label, m in metrics_extra:
             if 'r2' in m:
