@@ -26,16 +26,16 @@ app = FastAPI(
 )
 
 # ── État global ────────────────────────────────────────────────────
-None_mm: Optional[ModelManager] = None
+_mm: Optional[ModelManager] = None
 
 
 def _get_mm() -> ModelManager:
-    global None_mm
-    if None_mm is None:
-        None_mm = ModelManager()
-        if not None_mm.load_models(MODEL_FILE):
+    global _mm
+    if _mm is None:
+        _mm = ModelManager()
+        if not _mm.load_models(MODEL_FILE):
             raise HTTPException(500, "Aucun modèle chargé. Entraînez d'abord via main.py.")
-    return None_mm
+    return _mm
 
 
 # ── Schémas Pydantic ───────────────────────────────────────────────
