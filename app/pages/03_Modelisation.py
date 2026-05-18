@@ -33,9 +33,14 @@ st.sidebar.caption("Analyse Prédictive des Performances Scolaires v3.0")
 
 st.title("🤖 Modélisation")
 
+df_clean = _get("df_clean")
 df_feat = _get("df_feat")
-if df_feat is None:
-    st.warning("⚠️ Effectuez d'abord le Preprocessing (Page 2).")
+
+if df_clean is None:
+    st.warning("⚠️ Veuillez d'abord Nettoyer les données (Page 2) pour continuer.")
+    st.stop()
+elif df_feat is None:
+    st.warning("⚠️ Veuillez effectuer le Feature Engineering (Page 2) pour continuer.")
     st.stop()
 
 # Saisie du nom du modèle via une liste déroulante multi-sélection

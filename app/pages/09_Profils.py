@@ -29,9 +29,14 @@ st.info(
     "communiqués directement aux élèves ou aux familles."
 )
 
+df_clean = _get("df_clean")
 df_feat = _get("df_feat")
-if df_feat is None:
-    st.warning("⚠️ Effectuez d'abord le Preprocessing (Page 2).")
+
+if df_clean is None:
+    st.warning("⚠️ Veuillez d'abord Nettoyer les données (Page 2) pour continuer.")
+    st.stop()
+elif df_feat is None:
+    st.warning("⚠️ Veuillez effectuer le Feature Engineering (Page 2) pour continuer.")
     st.stop()
 
 # Paramètres
